@@ -1,23 +1,75 @@
-node_modules/
-.expo/
-dist/
-npm-debug.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-web-build/
+####################################
+# Root-level
+####################################
 
-
-
-
-ios
-android
-
-# macOS
+# OS / Editor junk
 .DS_Store
+Thumbs.db
+*.log
 
-# Temporary files created by Metro to check the health of the file watcher
-.metro-health-check*
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+####################################
+# Node / JS (shared)
+####################################
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.env
+.env.*
+!.env.example
+
+####################################
+# Frontend — React + Vite
+####################################
+
+# Build output
+frontend/dist/
+frontend/.vite/
+
+# Cache
+frontend/node_modules/
+
+# Testing
+frontend/coverage/
+
+####################################
+# Backend — Colyseus (Node.js)
+####################################
+
+# Dependencies
+backend/node_modules/
+
+# Build output (if using TS or bundlers)
+backend/dist/
+backend/build/
+
+# Runtime data
+backend/.colyseus/
+backend/logs/
+
+# Testing
+backend/coverage/
+
+####################################
+# TypeScript
+####################################
+
+*.tsbuildinfo
+
+####################################
+# Optional: lockfiles (choose one ecosystem)
+####################################
+# Uncomment ONLY if you do NOT want lockfiles committed
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
