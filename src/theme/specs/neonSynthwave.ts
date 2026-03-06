@@ -1,0 +1,56 @@
+// src/theme/specs/neonSynthwave.ts
+import type { ThemeSpec } from "../themes";
+
+export const neonSynthwave: ThemeSpec = {
+    id: "neonSynthwave",
+    name: "Neon Synthwave",
+    pair: { primary: "#00CCFF", secondary: "#FF00CC" },
+    neutrals: {
+        bg0: "#04000e",
+        bg1: "#05000f",
+        ink0: "#F1F5FF",
+        ink1: "#A6B3E6",
+        line: "#1B1F44",
+    },
+    table: {
+        felt: "#05000f",
+        rail: "rgba(255,0,200,0.26)",
+        rim: "rgba(255,0,200,0.42)",
+        vignette: "rgba(0,0,0,0.65)",
+        rimGradient: ["#080018", "#140030", "#080018"],
+        surfaceGradient: ["#03000c", "#05000f", "#020008"],
+        railStroke: "rgba(255,0,200,0.26)",
+        centerRing: "rgba(255,0,200,0.13)",
+        gridColor: "rgba(255,0,200,1)", // grid tint; we’ll mix with cyan in overlay too
+        gridOpacity: 0.12,
+        feltTintOpacity: 0.10,
+        shadowOpacity: 0.72,
+    },
+    cardBack: {
+        top: "#05001a",
+        bottom: "#0a002c",
+        border: "rgba(0,200,255,0.36)",
+        pattern: "rgba(255,0,200,0.12)",
+        emblem: "rgba(0,204,255,0.55)",
+    },
+    card: {
+        paperTop: "#090018",
+        paperBottom: "#120032",
+        border: "rgba(255,0,200,.36)",
+        pipRed: "#ff00cc",
+        pipBlack: "#00ccff",
+        depthSheetColor: "#000000",
+        cornerPlateBorder: "rgba(0,0,0,0.10)",
+        rimLight: "rgba(255,255,255,0.0)",
+        bevelHighlight: "rgba(255,255,255,0.70)",
+        bevelShadow: "rgba(0,0,0,0.06)",
+        watermarkBorder: "rgba(0,0,0,0.04)",
+        watermarkRedBg: "rgba(198,40,40,0.05)",
+        watermarkBlackBg: "rgba(15,23,42,0.04)",
+        bigSuitTextShadow: "rgba(0,0,0,0.14)",
+    },
+    piles: { drawGlow: "#00CCFF", discardGlow: "#FF00CC", counterBg: "rgba(0,204,255,0.10)", ghostPaper: "rgba(250,250,250,0.88)" },
+    semantic: { text: "#F1F5FF", textMuted: "#A6B3E6", bg: "#04000e" },
+    danger: "#FF3B7A",
+    success: "#00F5A0",
+};

@@ -1,0 +1,57 @@
+// src/theme/specs/bourbonLeather.ts
+import {ThemeSpec, withCardMat} from "../themes";
+
+export const bourbonLeather: ThemeSpec = {
+    id: "bourbonLeather",
+    name: "Bourbon & Leather",
+    pair: { primary: "#C87818", secondary: "#E08820" },
+    neutrals: {
+        bg0: "#0c0502",
+        bg1: "#482509",
+        ink0: "#FFF2DE",
+        ink1: "#D8BFA0",
+        line: "#3C200D",
+    },
+    table: {
+        felt: "#482509",
+        rail: "rgba(200,118,28,0.26)",
+        rim: "rgba(175,95,25,0.36)",
+        vignette: "rgba(0,0,0,0.60)",
+        rimGradient: ["#2a0e06", "#440e04", "#2a0e06"],
+        surfaceGradient: ["#3a1c08", "#482509", "#381a07"],
+        railStroke: "rgba(200,118,28,0.26)",
+        centerRing: "rgba(200,118,28,0.10)",
+        gridColor: "rgba(200,135,45,1)",
+        gridOpacity: 0.06,
+        feltTintOpacity: 0.14,
+        shadowOpacity: 0.58,
+    },
+    cardBack: {
+        top: "#180802",
+        bottom: "#261005",
+        border: "rgba(200,118,28,0.30)",
+        pattern: "rgba(200,135,45,0.10)",
+        emblem: "rgba(200,118,28,0.55)",
+    },
+    card: withCardMat({
+        cornerPlateBg: "", pendingGlow: "", selectedRing: "",
+        paperTop: "#f8ecd4",
+        paperBottom: "#ecdbac",
+        border: "rgba(175,115,38,.26)",
+        pipRed: "#8b1818",
+        pipBlack: "#18182a",
+        depthSheetColor: "#000000",
+        cornerPlateBorder: "rgba(0,0,0,0.10)",
+        rimLight: "rgba(255,255,255,0.35)",
+        bevelHighlight: "rgba(255,255,255,0.70)",
+        bevelShadow: "rgba(0,0,0,0.06)",
+        watermarkBorder: "rgba(0,0,0,0.04)",
+        watermarkRedBg: "rgba(198,40,40,0.05)",
+        watermarkBlackBg: "rgba(15,23,42,0.04)",
+        bigSuitTextShadow: "rgba(0,0,0,0.14)"
+    }),
+    piles: { drawGlow: "#C87818", discardGlow: "#E8C870", counterBg: "rgba(20,10,4,0.35)", ghostPaper: "rgba(248,236,212,0.88)" },
+    semantic: { text: "#FFF2DE", textMuted: "#D8BFA0", bg: "#0c0502" },
+    danger: "#8B1A1A",
+    success: "#31D07A",
+};
