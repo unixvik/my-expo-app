@@ -13,6 +13,7 @@ export function PlayerCards() {
     const { isDesktop } = useDevice();
     const playerCards = useGameSelector(selectPlayerCards, shallowEqual);
     const canDiscard = useGameSelector(selectCanDiscard);
+    const dealingActive = useGameSelector(s => s.ui.dealingActive);
 
     const {
         onCardPress,
@@ -32,7 +33,7 @@ export function PlayerCards() {
     const handMul = isDesktop ? 0.75 : 0.8;
 
     return (
-        <View className="flex-row items-center justify-center" style={styles.cardsArea} pointerEvents="box-none">
+        <View className="flex-row items-center justify-center" style={[styles.cardsArea, dealingActive && styles.hidden]} pointerEvents="box-none">
             {canDiscard ? (
                 <DiscardButton selectedCount={selectedIds.size} handleDiscard={handleDiscard} />
             ) : null}
@@ -66,4 +67,5 @@ const styles = StyleSheet.create({
         overflow: "visible",
         zIndex: 1,
     },
+    hidden: { opacity: 0 },
 });

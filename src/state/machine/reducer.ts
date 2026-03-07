@@ -8,6 +8,8 @@ import {
     normalizeTurn,
 } from "@/state/machine/utilities";
 import { convertServerCardToUICard } from "@/helpers/suitHelpers";
+import { predictionReducer } from "@/state/prediction/reducer";
+import { DISCARD_PEEK } from "@/components/Piles/DiscardPile/discardPileConfig";
 
 // -----------------------------
 // Small helpers (pure + cheap)
@@ -20,17 +22,12 @@ const isMe = (state: RootState, stableId: string) => !!state.game.myPlayerId && 
 
 function phaseFromStatus(status: string): RootState["game"]["phase"] {
     switch (status) {
-        case "waiting":
-            return "lobby";
+        case "waiting":     return "lobby";
         case "starting":
-        case "playing":
-            return "playing";
-        case "roundEnded":
-            return "roundEnded";
-        case "gameEnded":
-            return "gameOver";
-        default:
-            return "lobby";
+        case "playing":     return "playing";
+        case "roundEnded":  return "roundEnded";
+        case "gameEnded":   return "gameOver";
+        default:            return "lobby";
     }
 }
 
@@ -70,11 +67,9 @@ export function reducer(state: RootState, ev: Event): RootState {
             const a = (ev as any).action;
             if (!a?.type || !a?.payload) return state;
 
-            console.log('[SERVER_ACTION]', a.type, a.payload);
-
             switch (a.type) {
                 // ============================================================
-                // DISCARD - For syncing offset animation across all clients
+                // DISCARD - syncs offset animation across all clients
                 // ============================================================
                 case "DISCARD": {
                     const p = a.payload as {
@@ -86,48 +81,32 @@ export function reducer(state: RootState, ev: Event): RootState {
                     };
                     const actorId = p.playerId;
 
-                    console.log('[SERVER_ACTION] DISCARD FULL PAYLOAD:', {
-                        actorId,
-                        myId: state.game.myPlayerId,
-                        topDiscardBefore: p.topDiscardBefore,
-                        topDiscardAfter: p.topDiscardAfter,
-                        currentGameTopDiscard: state.game.topDiscard,
-                        cardCount: p.discardedCards?.length ?? p.cardIds?.length ?? 1,
-                    });
-
-                    // ✅ CRITICAL: Update game.topDiscard immediately from action payload
                     const nextGame = {
                         ...state.game,
                         topDiscard: p.topDiscardAfter ? toUiCard(p.topDiscardAfter) : state.game.topDiscard,
                         cardsDiscarded: (state.game.cardsDiscarded || 0) + (p.cardIds?.length ?? 1),
                     };
 
-                    console.log('[SERVER_ACTION] Updated game.topDiscard immediately:', nextGame.topDiscard?.id);
-
-                    // ✅ If opponent discards, create flight animations AND set offset card
                     if (!isMe(state, actorId)) {
-                        console.log('==========================================');
-                        console.log('[SERVER_ACTION] 🎴 OPPONENT DISCARD (BOT OR PLAYER)');
-                        console.log('[SERVER_ACTION] Actor ID:', actorId);
+                        // Check if prediction already fired for this opponent
+                        const existingPred = state.prediction.active.find(
+                            (pr) => pr.type === "opponentDiscard" && (pr as any).opponentId === actorId
+                        );
 
-                        const floatingCard = p.topDiscardAfter ? toUiCard(p.topDiscardAfter) : undefined;
+                        const underCard = p.topDiscardBefore ? toUiCard(p.topDiscardBefore) : state.game.topDiscard;
 
-                        // ✅ Try to get the previous card from payload, fallback to current state
-                        let underCard: any;
-                        if (p.topDiscardBefore) {
-                            underCard = toUiCard(p.topDiscardBefore);
-                            console.log('[SERVER_ACTION] Using topDiscardBefore from payload:', underCard?.id);
-                        } else {
-                            underCard = state.game.topDiscard;
-                            console.log('[SERVER_ACTION] topDiscardBefore missing! Using current game top:', underCard?.id);
+                        if (existingPred) {
+                            return {
+                                ...state,
+                                game: nextGame,
+                                prediction: predictionReducer(state.prediction, {
+                                    type: "PREDICTION_CONFIRMED",
+                                    id: existingPred.id,
+                                }),
+                            };
                         }
 
-                        console.log('[SERVER_ACTION] Card setup:', {
-                            underCard: underCard?.id,
-                            floatingCard: floatingCard?.id,
-                        });
-
-                        // ✅ Create flight animations from opponent seat to discard pile
+                        // No prediction - create flights now
                         const cards = (p.discardedCards ?? []).map(toUiCard).filter(Boolean) as any[];
                         const n = Math.max(1, cards.length || (p.cardIds?.length ?? 0) || 1);
 
@@ -140,45 +119,28 @@ export function reducer(state: RootState, ev: Event): RootState {
                                 from: { seat: actorId },
                                 to: "discard",
                                 card: cards[i],
+                                discardFraction: (i + 1) / n,
                             } as any);
                         }
 
-                        const newPeekSeq = (state.ui.discardPeekSeq ?? 0) + 1;
-
-                        console.log('[SERVER_ACTION] Setting offset card state:', {
-                            flights: flights.length,
-                            discardPeekX: 40,
-                            discardPeekY: 20,
-                            discardPeekRot: 25,
-                            discardPeekSeq: newPeekSeq,
-                            floatingCardId: floatingCard?.id,
-                        });
-                        console.log('==========================================');
-
                         return {
                             ...state,
-                            game: nextGame, // ✅ Apply updated game state
+                            game: nextGame,
                             ui: {
                                 ...state.ui,
                                 mode: "animating",
                                 locks: { ...state.ui.locks, input: true },
                                 flightSeq: seq,
                                 flightQueue: [...state.ui.flightQueue, ...flights],
-
-                                // Set up offset card (will be applied when flights land)
-                                discardFloatingTop: floatingCard,
                                 discardHold: true,
                                 discardHoldTop: underCard,
                                 discardHoldCount: state.game.cardsDiscarded,
-                                discardPeekX: 40,
-                                discardPeekY: 20,
-                                discardPeekRot: 25,
-                                discardPeekSeq: newPeekSeq,
+                                discardedBatchSize: n,
                             },
                         };
                     }
 
-                    // For our own discards, update game state but let INTENT_DISCARD_SELECTED handle flights
+                    // Own discard: flight already created by INTENT_DISCARD_SELECTED
                     return { ...state, game: nextGame };
                 }
 
@@ -186,38 +148,54 @@ export function reducer(state: RootState, ev: Event): RootState {
                 // DRAW FROM DISCARD
                 // ============================================================
                 case "DRAW_FROM_DISCARD": {
-                    const p = a.payload as { playerId: string };
-                    const actorId = p.playerId;
+                    const actorId = (a.payload as { playerId: string }).playerId;
 
-                    console.log('[SERVER_ACTION] DRAW_FROM_DISCARD', { actorId, myId: state.game.myPlayerId });
-
-                    // Dispatch MY_DREW or OPPONENT_DREW
                     if (isMe(state, actorId)) {
-                        console.log('[SERVER_ACTION] Dispatching MY_DREW (fromDiscard: true)');
-                        return reducer(state, { type: "MY_DREW", fromDiscard: true } as any);
-                    } else {
-                        console.log('[SERVER_ACTION] Dispatching OPPONENT_DREW (fromDiscard: true)');
-                        return reducer(state, { type: "OPPONENT_DREW", opponentId: actorId, fromDiscard: true } as any);
+                        return reducer(state, { type: "MY_DREW", fromDiscard: true });
                     }
+
+                    const existingPred = state.prediction.active.find(
+                        (pr) => pr.type === "opponentDraw" && (pr as any).opponentId === actorId
+                    );
+
+                    if (existingPred) {
+                        return {
+                            ...state,
+                            prediction: predictionReducer(state.prediction, {
+                                type: "PREDICTION_CONFIRMED",
+                                id: existingPred.id,
+                            }),
+                        };
+                    }
+
+                    return reducer(state, { type: "OPPONENT_DREW", opponentId: actorId, fromDiscard: true });
                 }
 
                 // ============================================================
                 // DRAW FROM DECK
                 // ============================================================
                 case "DRAW_FROM_DECK": {
-                    const p = a.payload as { playerId: string };
-                    const actorId = p.playerId;
+                    const actorId = (a.payload as { playerId: string }).playerId;
 
-                    console.log('[SERVER_ACTION] DRAW_FROM_DECK', { actorId, myId: state.game.myPlayerId });
-
-                    // Dispatch MY_DREW or OPPONENT_DREW
                     if (isMe(state, actorId)) {
-                        console.log('[SERVER_ACTION] Dispatching MY_DREW (fromDiscard: false)');
-                        return reducer(state, { type: "MY_DREW", fromDiscard: false } as any);
-                    } else {
-                        console.log('[SERVER_ACTION] Dispatching OPPONENT_DREW (fromDiscard: false)');
-                        return reducer(state, { type: "OPPONENT_DREW", opponentId: actorId, fromDiscard: false } as any);
+                        return reducer(state, { type: "MY_DREW", fromDiscard: false });
                     }
+
+                    const existingPred = state.prediction.active.find(
+                        (pr) => pr.type === "opponentDraw" && (pr as any).opponentId === actorId
+                    );
+
+                    if (existingPred) {
+                        return {
+                            ...state,
+                            prediction: predictionReducer(state.prediction, {
+                                type: "PREDICTION_CONFIRMED",
+                                id: existingPred.id,
+                            }),
+                        };
+                    }
+
+                    return reducer(state, { type: "OPPONENT_DREW", opponentId: actorId, fromDiscard: false });
                 }
 
                 default:
@@ -245,14 +223,43 @@ export function reducer(state: RootState, ev: Event): RootState {
         case "TOP_DISCARD_UPDATED":
             return { ...state, game: { ...state.game, topDiscard: ev.card } };
 
-        case "MANDATORY_DRAW":
-            return { ...state, game: { ...state.game, mandatoryDraw: ev.value } };
+        case "MANDATORY_DRAW": {
+            const next = { ...state, game: { ...state.game, mandatoryDraw: ev.value } };
+            if (state.game.mandatoryDraw && !ev.value) {
+                return {
+                    ...next,
+                    ui: {
+                        ...next.ui,
+                        discardPile: {
+                            ...next.ui.discardPile,
+                            offset: { x: 0, y: 0, rot: 0 },
+                            offsetSeq: next.ui.discardPile.offsetSeq + 1,
+                            discardedBatchCount: 0,
+                        },
+                        discardDrawableCard: undefined,
+                        discardPileDrawing: false,
+                    },
+                };
+            }
+            return next;
+        }
 
         // -----------------------------
         // Hand & opponents
         // -----------------------------
-        case "HAND_UPDATED":
-            return state.ui.endFlow ? state : { ...state, game: { ...state.game, playerCards: ev.cards } };
+        case "HAND_UPDATED": {
+            if (state.ui.endFlow) return state;
+            const wasEmpty = state.game.playerCards.length === 0;
+            const gettingCards = ev.cards.length > 0;
+            const isRoundStart = wasEmpty && gettingCards && state.game.gameStatus === "playing";
+            return {
+                ...state,
+                game: { ...state.game, playerCards: ev.cards },
+                ui: isRoundStart
+                    ? { ...state.ui, dealSeq: (state.ui.dealSeq ?? 0) + 1, dealingActive: true }
+                    : state.ui,
+            };
+        }
 
         case "OPPONENT_UPDATED": {
             if (state.ui.endFlow && state.game.opponents.some((o) => o.id === ev.opponent.id)) return state;
@@ -270,31 +277,24 @@ export function reducer(state: RootState, ev: Event): RootState {
         case "OPPONENT_REMOVED":
             return { ...state, game: { ...state.game, opponents: state.game.opponents.filter((o) => o.id !== ev.id) } };
 
-        // ✅ Opponent draw - trigger slide-back for all clients
         case "OPPONENT_DREW": {
-            const drewFromDiscard = !!(ev as any).fromDiscard;
-
-            console.log('[OPPONENT_DREW] Opponent drew', {
-                opponentId: ev.opponentId,
-                fromDiscard: drewFromDiscard,
-            });
-
-            // ✅ Create flight - ANIM_FLIGHT_DONE will trigger slide-back automatically
             const id = (state.ui.flightSeq ?? 0) + 1;
-
-            const flight = drewFromDiscard
+            const flight = ev.fromDiscard
                 ? makeDrawFromDiscardFlight(state, id, { seat: ev.opponentId })
-                : ({
-                    id,
-                    kind: "draw",
-                    from: "deck",
-                    to: { seat: ev.opponentId },
-                } as any);
+                : ({ id, kind: "draw", from: "deck", to: { seat: ev.opponentId } } as any);
 
-            console.log('[OPPONENT_DREW] Creating flight', {
-                flightId: id,
-                from: drewFromDiscard ? 'discard' : 'deck',
-            });
+            const discardDrawUi = ev.fromDiscard
+                ? {
+                    discardDrawableCard: undefined as any,
+                    discardPileDrawing: true,
+                    discardPile: {
+                        ...state.ui.discardPile,
+                        offset: { x: 0, y: 0, rot: 0 },
+                        offsetSeq: state.ui.discardPile.offsetSeq + 1,
+                        discardedBatchCount: 0,
+                    },
+                }
+                : {};
 
             return {
                 ...state,
@@ -304,27 +304,82 @@ export function reducer(state: RootState, ev: Event): RootState {
                     locks: { ...state.ui.locks, input: true },
                     flightSeq: id,
                     flightQueue: [...state.ui.flightQueue, flight],
+                    ...discardDrawUi,
                 },
             };
         }
 
-        case "MY_DREW": {
-            const drewFromDiscard = !!(ev as any).fromDiscard;
+        case "MY_DREW":
+            return state;
 
-            console.log('[MY_DREW] Player drew', {
-                fromDiscard: drewFromDiscard,
-            });
+        // -----------------------------
+        // Prediction
+        // -----------------------------
+        case "PREDICT_OPPONENT_DRAW": {
+            const prediction = predictionReducer(state.prediction, ev as any);
+            const id = (state.ui.flightSeq ?? 0) + 1;
+            const flight = ev.fromDiscard
+                ? makeDrawFromDiscardFlight(state, id, { seat: ev.opponentId })
+                : ({ id, kind: "draw", from: "deck", to: { seat: ev.opponentId } } as any);
 
-            // ✅ Just update stats - ANIM_FLIGHT_DONE will trigger slide-back automatically
+            const discardDrawUi = ev.fromDiscard
+                ? {
+                    discardDrawableCard: undefined as any,
+                    discardPileDrawing: true,
+                    discardPile: {
+                        ...state.ui.discardPile,
+                        offset: { x: 0, y: 0, rot: 0 },
+                        offsetSeq: state.ui.discardPile.offsetSeq + 1,
+                        discardedBatchCount: 0,
+                    },
+                }
+                : {};
+// console.log("[PREDICT_OPPONENT_DRAW] opponent drew");
             return {
                 ...state,
-                game: {
-                    ...state.game,
-                    myDrawSeq: (state.game.myDrawSeq ?? 0) + 1,
-                    myLastFromDiscard: drewFromDiscard,
+                prediction,
+                ui: {
+                    ...state.ui,
+                    mode: "animating",
+                    locks: { ...state.ui.locks, input: true },
+                    flightSeq: id,
+                    flightQueue: [...state.ui.flightQueue, flight],
+                    ...discardDrawUi,
                 },
             };
         }
+
+        case "PREDICT_OPPONENT_DISCARD": {
+            const prediction = predictionReducer(state.prediction, ev as any);
+
+            let seq = state.ui.flightSeq ?? 0;
+            const flights: FlightRequest[] = [];
+            for (let i = 0; i < ev.count; i++) {
+                flights.push({ id: ++seq, kind: "discard", from: { seat: ev.opponentId }, to: "discard", discardFraction: (i + 1) / ev.count } as any);
+            }
+
+            return {
+                ...state,
+                prediction,
+                ui: {
+                    ...state.ui,
+                    mode: "animating",
+                    locks: { ...state.ui.locks, input: true },
+                    flightSeq: seq,
+                    flightQueue: [...state.ui.flightQueue, ...flights],
+                    discardHold: true,
+                    discardHoldTop: state.ui.discardHoldTop ?? state.game.topDiscard,
+                    discardHoldCount: state.ui.discardHoldCount ?? state.game.cardsDiscarded,
+                    discardedBatchSize: ev.count,
+                },
+            };
+        }
+
+        case "PREDICTION_CONFIRMED":
+            return { ...state, prediction: predictionReducer(state.prediction, ev as any) };
+
+        case "CLEAR_PREDICTIONS":
+            return { ...state, prediction: predictionReducer(state.prediction, ev as any) };
 
         // -----------------------------
         // UI interactions
@@ -425,15 +480,23 @@ export function reducer(state: RootState, ev: Event): RootState {
             const isDiscard = ev.type === "INTENT_DRAW_FROM_DISCARD";
             const id = (state.ui.flightSeq ?? 0) + 1;
 
-            // ✅ Create flight animation: deck/discard → hand
             const flight = isDiscard
                 ? makeDrawFromDiscardFlight(state, id, "hand")
-                : ({
-                    id,
-                    kind: "draw",
-                    from: "deck",
-                    to: "hand",
-                } as any);
+                : ({ id, kind: "draw", from: "deck", to: "hand" } as any);
+
+            const discardDrawUi = isDiscard
+                ? {
+                    // Immediately hide under card and spring offset back — card is now in the air
+                    discardDrawableCard: undefined as any,
+                    discardPileDrawing: true,
+                    discardPile: {
+                        ...state.ui.discardPile,
+                        offset: { x: 0, y: 0, rot: 0 },
+                        offsetSeq: state.ui.discardPile.offsetSeq + 1,
+                        discardedBatchCount: 0,
+                    },
+                }
+                : {};
 
             return {
                 ...state,
@@ -443,37 +506,37 @@ export function reducer(state: RootState, ev: Event): RootState {
                     locks: { ...state.ui.locks, input: true, draw: true },
                     flightSeq: id,
                     flightQueue: [...state.ui.flightQueue, flight],
-                    stageCommitArmed: (state.ui.stagedCards?.length ?? 0) > 0 || state.ui.stageCommitArmed,
-                    discardDrawHideTop: isDiscard ? true : state.ui.discardDrawHideTop,
+                    ...discardDrawUi,
                 },
             };
         }
-        //
+
         case "INTENT_DISCARD_SELECTED": {
-            if (state.ui.locks.input || state.ui.locks.discard || !(ev as any).ids?.length) return state;
+            if (state.ui.locks.input || state.ui.locks.discard || !ev.ids?.length) return state;
 
             const originById = new Map<string, DiscardOrigin>(
                 (ev.origins ?? []).map(o => [o.id, o])
             );
 
-            // Create discard flights for each selected card
             let seq = state.ui.flightSeq ?? 0;
             const flights: FlightRequest[] = [];
+            const totalDiscard = ev.ids.length;
 
-            for (const id of ev.ids) {
+            for (let di = 0; di < ev.ids.length; di++) {
+                const id = ev.ids[di];
                 const origin = originById.get(id);
                 const card = state.game.playerCards.find(c => c.id === id);
-
                 flights.push({
                     id: ++seq,
                     kind: "discard",
                     from: "hand",
                     to: "discard",
-                    card: card,
+                    card,
                     fromRect: origin?.rect ?? null,
+                    discardFraction: (di + 1) / totalDiscard,
                 } as any);
             }
-            console.log("[INTENT_DISCARD_SELECTED] ",ev.ids);
+
             return {
                 ...state,
                 ui: {
@@ -483,55 +546,23 @@ export function reducer(state: RootState, ev: Event): RootState {
                     locks: { ...state.ui.locks, input: true, discard: true },
                     flightSeq: seq,
                     flightQueue: [...state.ui.flightQueue, ...flights],
-
-                    // ✅ Freeze the current top card so pile doesn't change during animation
                     discardHold: true,
                     discardHoldTop: state.game.topDiscard,
                     discardHoldCount: state.game.cardsDiscarded,
-
-                    // ✅ Clear any previous floating card when starting new discard
-                    discardFloatingTop: undefined,
-                    discardPeekX: 0,
-                    discardPeekY: 0,
-                    discardPeekRot: 0,
+                    discardedBatchSize: ev.ids.length,
                 },
             };
         }
 
-        // Legacy / compatibility
-        case "OPPONENT_DISCARDED": {
-            const n = Math.max(1, (ev as any).count ?? 1);
-            const cards = ((ev as any).cards ?? []) as any[];
-
-            let seq = state.ui.flightSeq ?? 0;
-            const flights: FlightRequest[] = [];
-            for (let i = 0; i < n; i++) {
-                flights.push({
-                    id: ++seq,
-                    kind: "discard",
-                    from: { seat: (ev as any).opponentId },
-                    to: "discard",
-                    card: cards[i],
-                } as any);
-            }
-
-            return {
-                ...state,
-                ui: { ...state.ui, flightSeq: seq, flightQueue: [...state.ui.flightQueue, ...flights] },
-            };
-        }
-
         case "CLAIM_RESULT": {
-            const ui: any = state.ui;
-            if (!ui.claimPending) return state;
+            if (!state.ui.claimPending) return state;
 
-            const shouldUnlock = !(ev as any).ok;
             return {
                 ...state,
                 ui: {
                     ...state.ui,
-                    claimPending: false as any,
-                    locks: shouldUnlock ? { ...state.ui.locks, input: false } : state.ui.locks,
+                    claimPending: false,
+                    locks: !ev.ok ? { ...state.ui.locks, input: false } : state.ui.locks,
                 },
             };
         }
@@ -541,9 +572,9 @@ export function reducer(state: RootState, ev: Event): RootState {
             if (state.game.currentTurn !== state.game.myPlayerId) return state;
             if (state.ui.endFlow) return state;
             if (state.ui.locks.input) return state;
-            if ((state.ui as any).claimPending) return state;
+            if (state.ui.claimPending) return state;
 
-            return { ...state, ui: { ...state.ui, claimPending: true as any } };
+            return { ...state, ui: { ...state.ui, claimPending: true } };
         }
 
         // -----------------------------
@@ -551,78 +582,152 @@ export function reducer(state: RootState, ev: Event): RootState {
         // -----------------------------
         case "ANIM_FLIGHT_DONE": {
             const head = state.ui.flightQueue[0];
-            if (!head || head.id !== (ev as any).id) return state;
+            if (!head || head.id !== ev.id) return state;
 
             const nextQueue = state.ui.flightQueue.slice(1);
-            const nextSeq = state.ui.flightSeq ?? 0;
-
-            let nextLocks = state.ui.locks;
-            let nextMode = state.ui.mode;
-            let nextUi = state.ui;
-
             const doneAnimating = nextQueue.length === 0;
 
-            // ✨ Server-driven: only manage offset, server provides cards
+            let nextGame = state.game;
+            let nextUi = state.ui;
+            let nextLocks = state.ui.locks;
+            let nextMode = state.ui.mode;
+
             const isDiscardLanding = head.kind === "discard" && head.to === "discard";
+            const nextHead = nextQueue[0];
+            const isLastDiscardInBatch = isDiscardLanding &&
+                !(nextHead?.kind === "discard" && nextHead?.to === "discard");
+            const isIntermediateDiscard = isDiscardLanding && !isLastDiscardInBatch;
             const isDrawStarting = head.kind === "draw";
 
-            if (isDiscardLanding) {
-                // When discard lands: set offset
-                console.log('[ANIM_FLIGHT_DONE] 🎴 Discard landed, setting offset');
+            if (isIntermediateDiscard) {
+                // Progressive reveal: each card appears in the fan as it lands, rather than
+                // all cards appearing at once after the last flight completes.
+
+                // Pin the drawable card on the very first intermediate landing (before pile grows).
+                // nextGame.discardPile is still the pre-discard pile held by discardHold.
+                const drawableCard = nextUi.discardDrawableCard ??
+                    nextGame.discardPile[nextGame.discardPile.length - 1] ?? undefined;
+
+                // Reveal one more card from the pending pile (or use head.card as fallback
+                // if the server patch hasn't arrived yet).
+                const pending = nextUi.pendingDiscardPile;
+                const currentLen = nextGame.discardPile.length;
+                if (pending && currentLen < pending.length) {
+                    nextGame = { ...nextGame, discardPile: pending.slice(0, currentLen + 1) };
+                } else if (head.card) {
+                    nextGame = { ...nextGame, discardPile: [...nextGame.discardPile, head.card as any] };
+                }
+
+                const newBatchCount = nextUi.discardPile.discardedBatchCount + 1;
+                // Each card lands at its proportional fan position (fraction of full PEEK).
+                // This ensures card k of N stays put when card k+1 arrives (no snap).
+                const fraction = head.discardFraction ?? 1.0;
+                const fractionalOffset = {
+                    x: DISCARD_PEEK.x * fraction,
+                    y: DISCARD_PEEK.y * fraction,
+                    rot: DISCARD_PEEK.rot * fraction,
+                };
+                nextUi = {
+                    ...nextUi,
+                    discardDrawableCard: drawableCard as any,
+                    discardPile: {
+                        ...nextUi.discardPile,
+                        offset: fractionalOffset,
+                        offsetSeq: nextUi.discardPile.offsetSeq + 1,
+                        discardedBatchCount: newBatchCount,
+                    },
+                };
+            }
+
+            if (isLastDiscardInBatch) {
+                // discardDrawableCard may already be set by intermediate landings above.
+                // If so, preserve it; otherwise compute it from the pre-discard pile top.
+                const drawableCard = nextUi.discardDrawableCard ??
+                    nextGame.discardPile[nextGame.discardPile.length - 1] ?? undefined;
+
+                // Prefer the count stored at flight-creation time (reliable even if server patch is late).
+                // Fall back to computing from pile lengths if available.
+                const batchCount =
+                    nextUi.discardedBatchSize ??
+                    (nextUi.pendingDiscardPile !== undefined
+                        ? Math.max(1, nextUi.pendingDiscardPile.length - nextGame.discardPile.length)
+                        : 1);
+
+                // Apply the held discardPile now that all cards have landed
+                if (nextUi.pendingDiscardPile !== undefined) {
+                    nextGame = { ...nextGame, discardPile: nextUi.pendingDiscardPile };
+                    nextUi = { ...nextUi, pendingDiscardPile: undefined };
+                }
 
                 nextUi = {
                     ...nextUi,
+                    discardedBatchSize: undefined, // consumed
+                    discardDrawableCard: drawableCard as any,
                     discardPile: {
-                        offset: { x: 40, y: 20, rot: 25 },
-                        offsetSeq: (nextUi.discardPile?.offsetSeq ?? 0) + 1,
+                        ...nextUi.discardPile,
+                        offset: DISCARD_PEEK,
+                        offsetSeq: nextUi.discardPile.offsetSeq + 1,
+                        discardedBatchCount: batchCount,
                     },
                 };
-
-                // ✅ If this is OUR discard (from hand), track the card IDs for server call
-                if (head.from === "hand") {
-                    // Collect all pending discard card IDs from remaining flights + this one
-                    const myDiscardFlights = [head, ...nextQueue].filter(
-                        f => f.kind === "discard" && f.from === "hand" && f.to === "discard"
-                    );
-
-                    const cardIds = myDiscardFlights
-                        .map(f => f.card?.id)
-                        .filter(Boolean) as string[];
-
-                    console.log('[ANIM_FLIGHT_DONE] My discard completed, need to send to server:', cardIds);
-
-                    // Store in state so component can send to server
-                    nextUi = {
-                        ...nextUi,
-                        discardPile: nextUi.discardPile,
-                        pendingServerDiscard: cardIds, // ✨ NEW: Track what needs to be sent
-                    };
-                }
             }
 
             if (isDrawStarting) {
-                // When draw starts: clear offset (slide-back)
-                console.log('[ANIM_FLIGHT_DONE] 🎯 Draw starting, clearing offset');
+                nextUi = { ...nextUi, discardPileDrawing: false };
 
-                nextUi = {
-                    ...nextUi,
-                    discardPile: {
-                        offset: { x: 0, y: 0, rot: 0 },
-                        offsetSeq: (nextUi.discardPile?.offsetSeq ?? 0) + 1,
-                    },
-                };
+                // When a draw flight FROM the discard pile completes, always clear the PEEK
+                // offset. This handles the case where the discard flight landed and set the
+                // PEEK AFTER the draw-intent already tried to clear it (race between
+                // SERVER_ACTION DISCARD landing and PREDICT_OPPONENT_DRAW firing).
+                if (head.from === "discard") {
+                    nextUi = {
+                        ...nextUi,
+                        discardPile: {
+                            ...nextUi.discardPile,
+                            offset: { x: 0, y: 0, rot: 0 },
+                            offsetSeq: nextUi.discardPile.offsetSeq + 1,
+                            discardedBatchCount: 0,
+                        },
+                        discardDrawableCard: undefined,
+                    };
+                }
             }
 
             if (doneAnimating) {
                 nextMode = "idle";
                 nextLocks = { ...nextLocks, input: false, discard: false, draw: false };
+
+                // Release discard hold and apply any stashed server updates
+                if (nextUi.discardHold) {
+                    if (nextUi.pendingTopDiscard !== undefined) {
+                        nextGame = {
+                            ...nextGame,
+                            topDiscard: nextUi.pendingTopDiscard,
+                            cardsDiscarded: nextUi.pendingDiscardCount ?? nextGame.cardsDiscarded,
+                        };
+                    }
+                    if (nextUi.pendingDiscardPile !== undefined) {
+                        nextGame = { ...nextGame, discardPile: nextUi.pendingDiscardPile };
+                    }
+                    nextUi = {
+                        ...nextUi,
+                        discardHold: false,
+                        discardHoldTop: undefined,
+                        discardHoldCount: undefined,
+                        pendingTopDiscard: undefined,
+                        pendingDiscardCount: undefined,
+                        pendingDiscardPile: undefined,
+                        discardPile: { ...nextUi.discardPile, underCard: null },
+                    };
+                }
             }
 
             return {
                 ...state,
+                game: nextGame,
                 ui: {
                     ...nextUi,
-                    flightSeq: nextSeq,
+                    flightSeq: state.ui.flightSeq,
                     flightQueue: nextQueue,
                     mode: nextMode,
                     locks: nextLocks,
@@ -630,96 +735,8 @@ export function reducer(state: RootState, ev: Event): RootState {
             };
         }
 
-        case "CLEAR_FLOATING_DISCARD":
-            console.log('[CLEAR-FLOAT] Clearing floating discard card and releasing hold', {
-                cardId: state.ui.discardFloatingTop?.id,
-                hadHold: state.ui.discardHold,
-                hasPending: !!state.ui.pendingTopDiscard,
-            });
-
-            // ✅ Release hold and apply any pending server updates now that animation is done
-            let nextGame = state.game;
-            if (state.ui.pendingTopDiscard !== undefined) {
-                console.log('[CLEAR-FLOAT] Applying pending server updates', {
-                    pendingTop: state.ui.pendingTopDiscard?.id,
-                    pendingCount: state.ui.pendingDiscardCount,
-                });
-                nextGame = {
-                    ...nextGame,
-                    topDiscard: state.ui.pendingTopDiscard,
-                    cardsDiscarded: state.ui.pendingDiscardCount ?? nextGame.cardsDiscarded,
-                };
-            }
-
-            return {
-                ...state,
-                game: nextGame,
-                ui: {
-                    ...state.ui,
-                    discardFloatingTop: undefined,
-                    discardHold: false,
-                    discardHoldTop: undefined,
-                    discardHoldCount: undefined,
-                    pendingTopDiscard: undefined,
-                    pendingDiscardCount: undefined,
-                }
-            };
-
-        // ✨ NEW: State-driven discard pile events
-        case "DISCARD_LANDED": {
-            const landedCard = ev.card ?? state.game.topDiscard;
-
-            console.log('[DISCARD_LANDED] 🎴 Card landed on pile', {
-                landedCard: landedCard?.id,
-                settingOffset: { x: 40, y: 20, rot: 25 },
-            });
-
-            return {
-                ...state,
-                ui: {
-                    ...state.ui,
-                    discardPile: {
-                        floatingCard: landedCard ?? null,
-                        underCard: null, // ✅ Don't show under card
-                        offset: { x: 40, y: 20, rot: 25 },
-                        offsetSeq: (state.ui.discardPile.offsetSeq ?? 0) + 1,
-                    },
-                },
-            };
-        }
-
-        case "DRAW_STARTED": {
-            console.log('[DRAW_STARTED] 🎯 Starting slide-back animation');
-
-            return {
-                ...state,
-                ui: {
-                    ...state.ui,
-                    discardPile: {
-                        ...state.ui.discardPile,
-                        offset: { x: 0, y: 0, rot: 0 },
-                        offsetSeq: state.ui.discardPile.offsetSeq + 1,
-                    },
-                },
-            };
-        }
-
-        case "OFFSET_SLIDE_COMPLETE": {
-            console.log('[OFFSET_SLIDE_COMPLETE] ✅ Slide-back complete, clearing floating card');
-
-            return {
-                ...state,
-                ui: {
-                    ...state.ui,
-                    discardPile: {
-                        floatingCard: null,
-                        underCard: null,
-                        offset: { x: 0, y: 0, rot: 0 },
-                        offsetSeq: state.ui.discardPile.offsetSeq,
-                    },
-                },
-            };
-        }
+        case "ANIM_DEAL_DONE":
+            return { ...state, ui: { ...state.ui, dealingActive: false } };
 
         default:
             return state;

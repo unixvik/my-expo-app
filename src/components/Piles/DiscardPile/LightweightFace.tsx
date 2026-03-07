@@ -32,8 +32,8 @@ export const LightweightFace = memo(function LightweightFace({ w, h, r, rank, su
 
     // Theme fallbacks (don’t assume cardFace exists)
     const borderColor = (t as any)?.components?.cardFace?.border ?? (t as any)?.components?.cardFront?.border ?? "rgba(0,0,0,0.35)";
-    const bg = (t as any)?.components?.cardFace?.background ?? (t as any)?.components?.cardFront?.background ?? "#fff";
-
+    // const bg = (t as any)?.components?.cardFace?.background ?? (t as any)?.components?.cardFront?.background ?? "#fff";
+const bg="#fff";
     // Sizes
     const cornerFont = Math.max(10, Math.round(h * 0.18));
     const suitFont = Math.max(14, Math.round(h * 0.32));

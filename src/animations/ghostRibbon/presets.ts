@@ -13,15 +13,15 @@ export type GhostRibbonPreset = {
 };
 
 export const ClassicSilk: GhostRibbonPreset = {
-    dur: 700,
-    arcH: -110,
-    baseRotZ: 0,
+    dur: 360,        // snappier throw, more casual energy
+    arcH: 190,       // dramatic but not extreme arc
+    baseRotZ: 15,    // card banks in direction of travel (like a thrown card)
     tableRotX: 44,
-    handRotX: 0,
-    ghostCount: 10,
-    historyStep: 3,
-    opacity0: 0.52,
-    fadePow: 0.72,
-    scaleBoost: 0.06,
-    stretchMax: 0.32,
+    handRotX: 160,
+    ghostCount: 10,   // elegant ribbon, not too dense
+    historyStep: 5,  // tighter trail spacing
+    opacity0: 0.25,
+    fadePow: 0.05,   // faster fall-off → cleaner ribbon
+    scaleBoost: 0,
+    stretchMax: 0.26,
 };

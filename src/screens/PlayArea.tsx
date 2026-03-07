@@ -1,6 +1,6 @@
 // src/screens/PlayArea.tsx
 
-import React, { useMemo, useRef, useCallback } from "react";
+import React, { useRef, useCallback } from "react";
 import { View } from "react-native";
 import { TableSurface } from "@/components/Table/TableSurface/TableSurface";
 import Opponents from "@/components/OpponentSeat/Opponents";
@@ -8,7 +8,7 @@ import { DrawPile } from "@/components/Piles/DrawPile/DrawPile";
 import { DiscardPile } from "@/components/Piles/DiscardPile/DiscardPile";
 import { ThemeCyclerOverlay } from "@/components/Dev/ThemeCyclerOverlay";
 
-import { selectOpponentsInTurnOrder } from "@/state/machine/selector";
+import { selectOpponentsInTurnOrder, selectPlayersReady } from "@/state/machine/selector";
 import { useGameSelector, shallowEqual } from "@/state/machine/useGameSelector";
 import { useGameCommands } from "@/state/machine/useGameCommands";
 
@@ -67,7 +67,7 @@ export function PlayArea({ room, sessionId }: Props) {
             mandatoryDraw: s.game.mandatoryDraw,
             flavorText: s.game.flavorText,
             phase: s.game.phase,
-            popup: s.ui.endFlow?.step ?? s.ui.popup, // ✅ derive from endFlow
+            popup: s.ui.endFlow?.step ?? s.ui.popup,
             lastRound: s.game.lastRound,
             mySessionId: s.game.sessionId,
             myPlayerId: s.game.myPlayerId,
@@ -75,16 +75,7 @@ export function PlayArea({ room, sessionId }: Props) {
         shallowEqual
     );
 
-    const playersMap = room.state.players;
-
-    const players = useMemo(() => {
-        if (!playersMap) return [];
-        return Array.from(playersMap.values()).map((p: any) => ({
-            id: p.id ?? p.sessionId, // prefer stableId if present
-            name: p.name,
-            ready: !!p.ready,
-        }));
-    }, [playersMap]);
+    const players = useGameSelector(selectPlayersReady, shallowEqual);
 
     type Pose3D = { rx?: number; ry?: number; rz?: number; s?: number };
     type AnchorRect = { x: number; y: number; w: number; h: number; pose?: Pose3D };
@@ -146,10 +137,10 @@ export function PlayArea({ room, sessionId }: Props) {
 
             {phase === "waitingNextRound" && (
                 <WaitingForPlayersOverlay
-                    players={players}
+                    players={players.map((p) => ({ id: p.playerId, name: p.name, ready: p.ready }))}
                     localPlayerId={mySessionId}
                     roundNumber={2}
-                    isLocalReady={true}
+                    isLocalReady={players.find((p) => p.isMe)?.ready ?? false}
                     onReady={() => room.send("player_ready")}
                 />
             )}

@@ -282,6 +282,14 @@ export function bindRoom(
         })
     );
 
+    const syncDiscardPile = () => {
+        const pile = arr<any>(room.state.discardPile).map((c) => convertServerCardToUICard(c));
+        enqueuePatch({ discardPile: pile });
+    };
+
+    unsubs.push(callbacks.onAdd("discardPile", syncDiscardPile));
+    unsubs.push(callbacks.onRemove("discardPile", syncDiscardPile));
+
     // ---------------- PLAYERS ----------------
 
     const attachPlayer = (player: any, stableId: string) => {
@@ -343,6 +351,8 @@ export function bindRoom(
                 }
             )
         );
+
+
 
         (player as any).__unbind = () =>
             localUnsubs.forEach(safe);

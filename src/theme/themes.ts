@@ -508,7 +508,7 @@ export const THEME_SPECS: Record<ThemeId, ThemeSpec> = {
             selectedRing: "#C62828",
             paperTop: "#ffffff",
             paperBottom: "#ffffff",
-            border: "rgba(255,0,0,0.1)",
+            border: "rgba(0,0,0,0.31)",
             pipRed: "#C62828",
             pipBlack: "#1a1612",
             depthSheetColor: "#d50000",

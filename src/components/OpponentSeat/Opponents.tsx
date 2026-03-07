@@ -7,7 +7,7 @@ import { calculateDepthEffects, getDepthConfig } from "@/helpers/depthEffects";
 import { useDevice } from "@/hooks/useDevice";
 import type { Opponent } from "@/types/game";
 
-type Rect = { x: number; y: number; w: number; h: number };
+type Rect = { x: number; y: number; w: number; h: number; pose?: { s?: number; rx?: number; ry?: number; rz?: number } };
 
 interface OpponentsProps {
     mockOpponents: Opponent[];
@@ -121,15 +121,19 @@ const OpponentSeatWrapperImpl = ({
         [seat.xPct, seat.yPct, depth.opacity, depth.scale]
     );
 
+    const { isDesktop } = useDevice();
+    // scaleMul matches FloatingCard's scaleMul — mini cards are 0.8 on mobile, 0.4 on desktop
+    const scaleMul = isDesktop ? 0.4 : 0.8;
+
     const report = useCallback(() => {
         if (!onSeatAnchor) return;
         const node: any = ref.current;
         if (!node?.measureInWindow) return;
 
         node.measureInWindow((x: number, y: number, w: number, h: number) => {
-            if (w > 0 && h > 0) onSeatAnchor(opponent.id, { x, y, w, h });
+            if (w > 0 && h > 0) onSeatAnchor(opponent.id, { x, y, w, h, pose: { s: scaleMul } });
         });
-    }, [onSeatAnchor, opponent.id]);
+    }, [onSeatAnchor, opponent.id, scaleMul]);
 
     // Measure on mount and whenever the seat meaningfully moves/scales
     useEffect(() => {

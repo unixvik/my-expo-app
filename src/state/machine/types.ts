@@ -3,6 +3,7 @@
 import type {HandCard, FaceCard, Opponent} from "@/types/game";
 import type {ThemeId} from "@/theme";
 import type {ServerCard} from "@/helpers/suitHelpers";
+import type {PredictionState} from "@/state/prediction/types";
 
 export type GamePhase = "boot" | "lobby" | "playing" | "roundEnded" | "waitingNextRound" | "gameOver";
 export type UiMode = "idle" | "selecting" | "dragging" | "animating" | "blocked";
@@ -56,12 +57,6 @@ export interface GameState {
 
     flavorText: string;
 
-    opponentDrawSeq: number;
-    lastOpponentDrawerId: string | null;
-    lastOpponentFromDiscard: boolean;
-
-    myDrawSeq: number;
-    myLastFromDiscard: boolean;
     discardPile: FaceCard[];
     readyList: ReadyRow[];
 }
@@ -80,6 +75,10 @@ export type FlightRequest = {
     card?: HandCard;
     fromRect?: { x: number; y: number; w: number; h: number } | null;
     stageIndex?: number;
+
+    // For discard batches: k/N fraction (1/N for first card, 1.0 for last).
+    // Drives landing position and pile offset so each card arrives at its final fan spot.
+    discardFraction?: number;
 };
 export type Rect = { x: number; y: number; w: number; h: number };
 
@@ -90,7 +89,7 @@ export type DiscardOrigin = {
 };
 
 // -----------------------------
-// ✅ animTx (transaction)
+// animTx (transaction) - planned, not yet active
 // -----------------------------
 export type AnimTxKind = "turnAction";
 
@@ -137,37 +136,42 @@ export interface UiState {
     eventLog: { type: string; at: number }[];
     lastEvent?: { type: string; at: number };
 
-    animTx: AnimTx | null;
-
     stagedCards: HandCard[];
-    stageCommitArmed: boolean;
 
-    // ✨ NEW: Unified discard pile state (state-driven)
+    // Unified discard pile state (state-driven)
     discardPile: {
-        floatingCard: HandCard | null;    // The offset card
-        underCard: HandCard | null;        // What shows underneath
-        offset: { x: number; y: number; rot: number };  // Position
-        offsetSeq: number;                 // Animation trigger
+        floatingCard: HandCard | null;
+        underCard: HandCard | null;
+        offset: { x: number; y: number; rot: number };
+        offsetSeq: number;
+        discardedBatchCount: number; // number of cards in the current discard batch (fan display)
     };
 
-    // 🗑️ DEPRECATED: Old scattered state (will be removed)
-    discardFloatingTop?: HandCard;
+    // Discard hold: freezes topDiscard/discardPile display during flight animations
     discardHold: boolean;
     discardHoldTop?: HandCard;
     discardHoldCount?: number;
     pendingTopDiscard?: HandCard;
     pendingDiscardCount?: number;
-    discardPeekX?: number;
-    discardPeekY?: number;
-    discardPeekSeq?: number;
-    discardPeekRot?: number;
+    pendingDiscardPile?: FaceCard[];
+    // The drawable card (original top before this discard batch) — shown as under card and used for draw flights
+    discardDrawableCard?: FaceCard;
+    // True while the drawable card is mid-flight to a hand; hides the under card in the pile
+    discardPileDrawing: boolean;
+    // Number of cards in the current discard batch — set at flight-creation time (reliable count)
+    discardedBatchSize?: number;
+
     claimPending: boolean;
-    discardDrawHideTop?: boolean;
-    pendingServerDiscard?: string[];
+
+    // Round-start dealing animation
+    dealSeq: number;       // increments each new round → triggers DealingCinematicOverlay
+    dealingActive: boolean; // true while the dealing animation is playing (hides PlayerCards)
 }
+
 export interface RootState {
     game: GameState;
     ui: UiState;
+    prediction: PredictionState;
 }
 
 export interface LeaderboardEntry {
@@ -228,6 +232,10 @@ export type Event =
     | { type: "TURN_TOPOLOGY_UPDATED"; order: string[]; currentTurn: string; currentTurnIndex: number; round?: number }
     | { type: "MY_DREW"; fromDiscard: boolean }
     | { type: "OPPONENT_DREW"; opponentId: string; fromDiscard: boolean }
+    | { type: "PREDICT_OPPONENT_DRAW"; opponentId: string; fromDiscard: boolean }
+    | { type: "PREDICT_OPPONENT_DISCARD"; opponentId: string; count: number }
+    | { type: "PREDICTION_CONFIRMED"; id: number }
+    | { type: "CLEAR_PREDICTIONS" }
     | { type: "UI_SELECT_TOGGLE"; id: string }
     | { type: "UI_CLEAR_SELECTION" }
     | { type: "UI_SET_MODE"; mode: UiMode }
@@ -236,9 +244,7 @@ export type Event =
     | { type: "UI_CLOSE_POPUP" }
     | { type: "UI_LOCK"; key: keyof UiState["locks"]; value: boolean }
     | { type: "UI_SET_SELECTION"; ids: string[] }
-    | {
-    type: "INTENT_DRAW_FROM_DECK";
-}
+    | { type: "INTENT_DRAW_FROM_DECK" }
     | {
     type: "INTENT_DRAW_FROM_DISCARD";
     originRect?: { x: number; y: number; w: number; h: number };
@@ -249,7 +255,6 @@ export type Event =
     ids: string[];
     origins?: DiscardOrigin[];
 }
-    | { type: "OPPONENT_DISCARDED"; opponentId: string; count: number }
     | { type: "INTENT_SHOUT_CLAIM" }
     | { type: "CLAIM_RESULT"; ok: boolean; reason?: string }
     | { type: "CLAIM_REVEAL_DONE" }
@@ -259,7 +264,4 @@ export type Event =
     | { type: "GAME_ENDED"; payload: GameEndedPayload }
     | { type: "ANIM_FLIGHT_DONE"; id: number }
     | { type: "ANIM_CLEAR_QUEUE" }
-    | { type: "CLEAR_FLOATING_DISCARD" }
-    | { type: "DISCARD_LANDED"; card?: HandCard }
-    | { type: "DRAW_STARTED" }
-    | { type: "OFFSET_SLIDE_COMPLETE" };
+    | { type: "ANIM_DEAL_DONE" };

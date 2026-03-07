@@ -15,6 +15,15 @@ export const useAnimatedCards = (fanPosition: FanPosition, isSelected: boolean, 
     const translateY = useSharedValue(0);
     const scale = useSharedValue(1);
 
+    // Entry animation: pop in from above when card first appears in the hand
+    const entryScale = useSharedValue(0);
+    const entryTranslateY = useSharedValue(-55);
+    useEffect(() => {
+        entryScale.value = withSpring(1, { damping: 10, stiffness: 220, mass: 0.7 });
+        entryTranslateY.value = withSpring(0, { damping: 11, stiffness: 200, mass: 0.7 });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // mount only
+
     // idle breathe
     const breathe = useSharedValue(0);
     useEffect(() => {
@@ -66,8 +75,8 @@ export const useAnimatedCards = (fanPosition: FanPosition, isSelected: boolean, 
         const breathScale = !isSelected ? (1 + 0.055 * b): 1;  // tiny!
         return {
             transform: [
-                { translateY: translateY.value },
-                { scale: scale.value * breathScale },
+                { translateY: translateY.value + entryTranslateY.value },
+                { scale: scale.value * breathScale * entryScale.value },
             ],
         };
     });

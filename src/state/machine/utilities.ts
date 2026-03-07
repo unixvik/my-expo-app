@@ -18,10 +18,7 @@ export function normalizeTurn(game: any, opts?: NormalizeTurnOpts) {
     let cur = game.currentTurn;
     let idx = game.currentTurnIndex;
 
-    // Treat null/empty/"undefined" as missing
     if (cur == null || cur === "" || cur === "undefined") cur = undefined;
-
-    // Normalize idx
     if (typeof idx !== "number" || Number.isNaN(idx)) idx = -1;
 
     if (n === 0) {
@@ -31,38 +28,30 @@ export function normalizeTurn(game: any, opts?: NormalizeTurnOpts) {
     const curIdx = cur ? order.indexOf(cur) : -1;
     const curValid = curIdx !== -1;
 
-    // If currentTurn is missing or invalid
     if (!curValid) {
-        // ✅ Strict mode: do not fabricate
         if (!allowDerive) {
             const safeIdx = (typeof idx === "number" && idx >= 0 && idx < n) ? idx : -1;
             return {...game, currentTurn: cur ?? "", currentTurnIndex: safeIdx};
         }
 
-        // Lenient mode: derive from idx (or default 0)
         let nextIdx = (idx >= 0 && idx < n) ? idx : 0;
         const nextCur = order[nextIdx] ?? order[0];
         return {...game, currentTurn: nextCur, currentTurnIndex: order.indexOf(nextCur)};
     }
 
-    // cur valid: enforce idx to match
     return {...game, currentTurn: cur, currentTurnIndex: curIdx};
 }
-
 
 export function nextFlightId(state: RootState): number {
     return (state.ui.flightSeq ?? 0) + 1;
 }
-/**
- * Builds map keyed by sessionId (Option B).
- */
+
 export function buildRevealMap(revealed: any[] | undefined) {
     if (!revealed?.length) return undefined;
 
     const map: Record<string, { cards: HandCard[]; handValue: number }> = {};
 
     for (const p of revealed) {
-        // Prefer stable id if server sends it (playerId/stableId), else fallback to sessionId
         const key =
             (typeof p.playerId === "string" && p.playerId) ||
             (typeof p.stableId === "string" && p.stableId) ||
@@ -79,22 +68,12 @@ export function buildRevealMap(revealed: any[] | undefined) {
 
     return map;
 }
+
 export function visibleTopDiscard(state: RootState) {
     return state.ui.discardHold
         ? (state.ui.discardHoldTop ?? state.game.topDiscard)
         : state.game.topDiscard;
 }
-
-export function dbgTurn(prefix: string, turnOrder: string[], currentTurn: string, currentTurnIndex: number) {
-    const idx = turnOrder.indexOf(currentTurn);
-    if (idx === -1 || currentTurnIndex === -1) {
-        // console.log(
-        //     `[TURNDBG ${prefix}] currentTurn="${currentTurn}" idx=${idx} stateIdx=${currentTurnIndex} order=[${turnOrder.join(", ")}]`
-        // );
-    }
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export const phaseFromStatus = (s: string) =>
     ({ waiting: "lobby", starting: "playing", playing: "playing", roundEnded: "roundEnded", gameEnded: "gameOver" }[s] || "lobby") as RootState["game"]["phase"];
@@ -110,27 +89,20 @@ export function applyServerUpdate(state: RootState, nextGame: any, patch: any) {
 
     const shouldNorm = ["turnOrder", "currentTurn", "currentTurnIndex"].some((k) => k in patch);
 
-    // ----------------------------
-    // ✅ 1) Build next game normally
-    // ----------------------------
     const baseGame = shouldNorm
         ? normalizeTurn({ ...nextGame, phase }, { allowDerive: false })
         : { ...nextGame, phase };
 
-    // ----------------------------
-    // ✅ 2) Mask discard pile truth while client is holding visuals
-    // ----------------------------
     let nextUi = state.ui;
     let game = baseGame;
 
     const holding = !!state.ui.discardHold;
 
     if (holding) {
-        const patchTouchesDiscard =
-            "topDiscard" in patch || "cardsDiscarded" in patch;
+        const patchTouchesDiscard = "topDiscard" in patch || "cardsDiscarded" in patch;
+        const patchTouchesDiscardPile = "discardPile" in patch;
 
         if (patchTouchesDiscard) {
-            // stash authoritative values to apply later
             nextUi = {
                 ...nextUi,
                 pendingTopDiscard:
@@ -139,48 +111,70 @@ export function applyServerUpdate(state: RootState, nextGame: any, patch: any) {
                     "cardsDiscarded" in patch ? baseGame.cardsDiscarded : nextUi.pendingDiscardCount,
             };
 
-            // keep currently-visible discard pile stable
             game = {
                 ...game,
                 topDiscard: state.game.topDiscard,
                 cardsDiscarded: state.game.cardsDiscarded,
             };
         }
+
+        if (patchTouchesDiscardPile) {
+            nextUi = {
+                ...nextUi,
+                pendingDiscardPile: baseGame.discardPile,
+            };
+
+            game = {
+                ...game,
+                discardPile: state.game.discardPile,
+            };
+        }
     }
 
-    // ----------------------------
-    // ✅ 3) When mandatory draw ends, slide floating card back and release hold
-    // ----------------------------
+    // When mandatory draw ends: slide the floating discard card back
     const prevMandatory = !!state.game.mandatoryDraw;
     const nextMandatory = !!game.mandatoryDraw;
 
-    // When mandatory draw ends (after a draw): slide the floating card back
-    if (prevMandatory && !nextMandatory) {
-        // Clear peek offset (triggers slide-back animation in DiscardPile)
+    // Slide back on turn change, UNLESS the human's mandatory draw window is active
+    // (meaning the human still needs to decide whether to draw the top discard card).
+    // `nextMandatory` reads state.game.mandatoryDraw which is set synchronously by the
+    // MANDATORY_DRAW dispatch — which fires before this SERVER_PATCH microtask runs.
+    const turnChanged = "currentTurn" in patch && patch.currentTurn !== state.game.currentTurn;
+    if (turnChanged && !nextMandatory && (nextUi.discardPile.offset.x !== 0 || nextUi.discardPile.offset.y !== 0 || nextUi.discardPile.offset.rot !== 0)) {
         nextUi = {
             ...nextUi,
-            discardPeekX: 0,
-            discardPeekY: 0,
-            discardPeekRot: 0,
-            discardPeekSeq: (nextUi.discardPeekSeq ?? 0) + 1,
-        };
-
-        // Clear floating card after a short delay to allow slide animation
-        // (The DiscardPile component will handle this via animation)
-        nextUi = {
-            ...nextUi,
-            discardFloatingTop: undefined,
+            discardPile: {
+                ...nextUi.discardPile,
+                offset: { x: 0, y: 0, rot: 0 },
+                offsetSeq: nextUi.discardPile.offsetSeq + 1,
+                discardedBatchCount: 0,
+            },
+            discardDrawableCard: undefined,
+            discardPileDrawing: false,
         };
     }
 
-    // ----------------------------
-    // ✅ 4) Release discard hold when mandatory draw ended
-    // ----------------------------
+    if (prevMandatory && !nextMandatory) {
+        nextUi = {
+            ...nextUi,
+            discardPile: {
+                ...nextUi.discardPile,
+                offset: { x: 0, y: 0, rot: 0 },
+                offsetSeq: nextUi.discardPile.offsetSeq + 1,
+                discardedBatchCount: 0,
+            },
+            discardDrawableCard: undefined,
+            discardPileDrawing: false,
+        };
+    }
+
+    // Release discard hold when mandatory draw ends
     if (state.ui.discardHold && prevMandatory && !nextMandatory) {
         game = {
             ...game,
             topDiscard: nextUi.pendingTopDiscard ?? game.topDiscard,
             cardsDiscarded: nextUi.pendingDiscardCount ?? game.cardsDiscarded,
+            discardPile: nextUi.pendingDiscardPile ?? game.discardPile,
         };
 
         nextUi = {
@@ -190,6 +184,8 @@ export function applyServerUpdate(state: RootState, nextGame: any, patch: any) {
             discardHoldCount: undefined,
             pendingTopDiscard: undefined,
             pendingDiscardCount: undefined,
+            pendingDiscardPile: undefined,
+            discardDrawableCard: undefined,
         };
     }
 
@@ -215,7 +211,15 @@ export function handleEndGame(state: RootState, payload: any, kind: "round" | "g
         flavorText: payload.flavorText,
     });
 
-    return { ...state, game, ui: { ...state.ui, endFlow: { kind, step: "claimAnnounce" }, locks: { ...state.ui.locks, input: true } } };
+    return {
+        ...state,
+        game,
+        ui: {
+            ...state.ui,
+            endFlow: { kind, step: "claimAnnounce" as const },
+            locks: { ...state.ui.locks, input: true },
+        },
+    };
 }
 
 export const PEEK = { x: 40, y: 20, rot: 25 };
@@ -233,46 +237,28 @@ export function enqueueFlights(state: RootState, flights: FlightRequest[]) {
     };
 }
 
-// Freeze pile to “pre-change” truth (under-card), so we can stage a floating top.
-export function beginDiscardTheater(state: RootState) {
-    return {
-        ...state.ui,
-        discardHold: true,
-        discardHoldTop: state.ui.discardHoldTop ?? state.game.topDiscard ?? undefined,
-        discardHoldCount: state.ui.discardHoldCount ?? state.game.cardsDiscarded,
-        // don’t change discardFloatingTop here; that gets set on landing
-    };
-}
-
-// Called when a discard flight lands in the discard pile (player or opponent).
-export function landDiscardTheater(ui: RootState["ui"], game: RootState["game"], landedCard: any) {
-    return {
-        ...ui,
-        discardHold: true,
-        discardHoldTop: ui.discardHoldTop ?? game.topDiscard ?? undefined,
-        discardHoldCount: ui.discardHoldCount ?? game.cardsDiscarded,
-        discardFloatingTop: landedCard ?? ui.discardFloatingTop,
-
-        discardPeekX: PEEK.x,
-        discardPeekY: PEEK.y,
-        discardPeekRot: PEEK.rot,
-        discardPeekSeq: (ui.discardPeekSeq ?? 0) + 1,
-    };
-}
-
-// Builds a draw-from-discard flight that always draws the UNDER-CARD (not the floating staged one).
+// Builds a draw-from-discard flight using the drawable (under) card.
+// - When discardHold is active: game.discardPile is still the pre-discard pile, so [-1] is the drawable card.
+// - When discardHold is released: game.discardPile has the new card at [-1] (offset/peek), so [-2] is drawable.
 export function makeDrawFromDiscardFlight(
     state: RootState,
     id: number,
     to: "hand" | { seat: string }
 ): FlightRequest {
-    const under = state.ui.discardHoldTop ?? state.game.topDiscard ?? undefined;
+    const pile = state.game.discardPile;
+    // discardDrawableCard = original top before this discard batch (set when last flight lands, cleared on draw/mandatory-draw-end)
+    // discardHold active = pre-discard pile: [-1] is the drawable card
+    // hold released, single discard: [-2] is the drawable card ([-1] is at PEEK)
+    const card = state.ui.discardDrawableCard
+        ?? (state.ui.discardHold
+            ? (pile[pile.length - 1] ?? undefined)
+            : (pile[pile.length - 2] ?? pile[pile.length - 1] ?? undefined));
 
     return {
         id,
         kind: "draw",
         from: "discard",
         to,
-        card: under, // ✅ the correct card (underneath), same for player & opponent
+        card,
     } as any;
 }

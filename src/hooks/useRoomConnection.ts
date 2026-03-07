@@ -114,6 +114,7 @@ export function useRoomConnection() {
                 const nextRoom = await client.joinOrCreate<ClaimRoomState>(ROOM_NAME, {
                     name: `Vik-${tag}`,
                     playerKey,
+                    customName: "ROOM_123"
                 });
 
                 // stale attempt or already connected

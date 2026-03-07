@@ -22,19 +22,21 @@ export type AnchorsRef = React.RefObject<{
     seats: Record<string, AnchorRect | undefined>;
 }>;
 
+// Match the pile's perspective so rotateX foreshortening looks identical on landing.
+import { scene3d } from "@/theme/scene";
+const CARD_PERSPECTIVE = scene3d.perspective; // 850
+
 export const CardFlightOverlay = memo(function CardFlightOverlay({
-                                                                     anchorsRef,
-                                                                 }: {
+    anchorsRef,
+}: {
     anchorsRef: AnchorsRef;
 }) {
     const flight = useGameSelector((s) => s.ui.flightQueue[0] as FlightRequest | undefined);
     const { animFlightDone } = useGameCommands();
 
-    // ✅ Use actual card dimensions from the hook
     const { CARD_W, CARD_H } = useCardSize();
     const cardSize = useMemo(() => ({ w: CARD_W, h: CARD_H }), [CARD_W, CARD_H]);
 
-    // decide face/back (same rules)
     const faceCard =
         flight?.kind === "discard" && flight.card
             ? (flight.card as HandCard)
@@ -44,7 +46,7 @@ export const CardFlightOverlay = memo(function CardFlightOverlay({
 
     const showFace = !!faceCard;
 
-    // ✅ hook must be called every render, even when flight is undefined
+    // Hook must be called every render (Rules of Hooks)
     const fx = useGhostRibbonFlight({
         flight,
         anchorsRef,
@@ -52,20 +54,23 @@ export const CardFlightOverlay = memo(function CardFlightOverlay({
         onDone: (id) => animFlightDone(id),
     });
 
-    // ✅ early return AFTER all hooks
     if (!flight) return null;
 
-    // ✅ NO hooks here - use the destination rect size if available, otherwise use base card size
     const toR = fx.toRectRef?.current;
-    const W = Math.round(toR?.w ?? cardSize.w);
-    const H = Math.round(toR?.h ?? cardSize.h);
+    // Seat anchors report wrapper dimensions (not card dimensions), so use
+    // full cardSize and let toPose.s handle the scale-down to mini-card size.
+    const isSeatDest = typeof flight.to === "object" && !!flight.to && "seat" in flight.to;
+    const W = isSeatDest ? cardSize.w : Math.round(toR?.w ?? cardSize.w);
+    const H = isSeatDest ? cardSize.h : Math.round(toR?.h ?? cardSize.h);
+
+    const halfW = W / 2;
+    const halfH = H / 2;
 
     return (
-        <View className={"z-[100]"} pointerEvents="none" style={[
-            StyleSheet.absoluteFill,
-             { transform: [{ perspective: fx.persp }] }
-        ]}>
-            {/* Ghost ribbon */}
+        // Plain View — no animated perspective here (perspective on plain View doesn't animate).
+        // Each Animated.View carries its own perspective as the first transform entry.
+        <View className={"z-[100]"} pointerEvents="none" style={StyleSheet.absoluteFill}>
+            {/* Ghost ribbon — rendered behind the main card (lower z-index) */}
             {fx.ghosts.map((g, i) => (
                 <Animated.View
                     key={i}
@@ -75,10 +80,13 @@ export const CardFlightOverlay = memo(function CardFlightOverlay({
                             width: W,
                             height: H,
                             opacity: g.op,
+                            // zIndex decreases for older ghosts so they render behind newer ones
+                            zIndex: fx.ghosts.length - i,
                             transform: [
-                                { translateX: Animated.subtract(g.tx, W / 2) },
-                                { translateY: Animated.subtract(g.ty, H / 2) },
-                                { perspective: g.persp },
+                                { translateX: Animated.subtract(g.tx, halfW) },
+                                { translateY: Animated.subtract(g.ty, halfH) },
+                                // perspective MUST come before rotateX to take effect
+                                { perspective: CARD_PERSPECTIVE },
                                 {
                                     rotateX: g.rotX.interpolate({
                                         inputRange: [-90, 90],
@@ -101,7 +109,7 @@ export const CardFlightOverlay = memo(function CardFlightOverlay({
                 </Animated.View>
             ))}
 
-            {/* Main flying card */}
+            {/* Main flying card — always on top */}
             <Animated.View
                 style={[
                     styles.cardWrap,
@@ -111,9 +119,10 @@ export const CardFlightOverlay = memo(function CardFlightOverlay({
                         height: H,
                         opacity: fx.op,
                         transform: [
-                            { translateX: Animated.subtract(fx.tx, W / 2) },
-                            { translateY: Animated.subtract(fx.ty, H / 2) },
-
+                            { translateX: Animated.subtract(fx.tx, halfW) },
+                            { translateY: Animated.subtract(fx.ty, halfH) },
+                            // perspective MUST come before rotateX
+                            { perspective: CARD_PERSPECTIVE },
                             {
                                 rotateX: fx.rotX.interpolate({
                                     inputRange: [-90, 90],

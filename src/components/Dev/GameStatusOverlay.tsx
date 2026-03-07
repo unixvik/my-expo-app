@@ -78,7 +78,7 @@ export const GameStatusOverlay = memo(function GameStatusOverlay() {
             <Text style={hud.sep}>-- Events --</Text>
 
             <Text style={hud.sub}>
-                {(eventLog?.slice(-5) ?? [])
+                {(eventLog?.slice(-15) ?? [])
                     .map(e => e.type.replace("INTENT_", "I_"))
                     .join("  →  ") || "none"}
             </Text>

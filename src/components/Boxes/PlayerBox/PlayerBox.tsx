@@ -10,10 +10,12 @@ import { useTurnActiveFx } from "@/components/Boxes/PlayerBox/useTurnActiveFx";
 import { styles } from '@/components/Boxes/PlayerBox/playerBox.styles';
 import { PlayerCards } from "@/components/Player/PlayerCards";
 import { useDevice } from "@/hooks/useDevice";
+import { useCardSize } from "@/hooks/useCardSize";
 import { ClaimButton } from "@/components/Buttons/CelestialClaimButton";
 import {useGameCommands} from "@/state/machine/useGameCommands";
 import { selectClaimPending } from "@/state/machine/selector";
-type Rect = { x: number; y: number; w: number; h: number };
+import { calculateCinematicFan } from "@/helpers/cardFanLayout";
+type Rect = { x: number; y: number; w: number; h: number; pose?: { rx?: number; ry?: number; rz?: number; s?: number } };
 
 interface PlayerBoxProps {
     name: string; onHandAnchor?: (r: Rect) => void; // ✅ new
@@ -28,7 +30,11 @@ export const PlayerBox = React.memo(function PlayerBox({ name, onHandAnchor }: P
     const handValue = useGameSelector(selectHandValue);
     const {claim} = useGameCommands();
     const { isDesktop } = useDevice();
+    const { CARD_W, CARD_H, SCALE } = useCardSize();
     const containerWidth = !isDesktop ? "55%" : "35%";
+    const handMul = isDesktop ? 0.75 : 0.8;
+
+    const playerCardCount = useGameSelector(s => s.game.playerCards.length);
 
     const { breatheAnim } = useTurnActiveFx(isMyTurn, {
         hapticOnActivate: true,
@@ -41,18 +47,38 @@ export const PlayerBox = React.memo(function PlayerBox({ name, onHandAnchor }: P
     const avatarLetter = useMemo(() => (displayName.charAt(0)).toUpperCase(), [displayName]);
 
     const handRef = useRef<View>(null);
+
+    // Report the exact slot where the NEXT drawn card will land: slot[N] in fan of N+1.
+    // Keeping the anchor always one step ahead means the flight destination is ready
+    // before the draw intent fires.
     const reportHand = useCallback(() => {
         if (!onHandAnchor) return;
         const node: any = handRef.current;
         if (!node?.measureInWindow) return;
         node.measureInWindow((x: number, y: number, w: number, h: number) => {
-            if (w > 0 && h > 0) onHandAnchor({ x, y, w, h });
+            if (w <= 0 || h <= 0) return;
+            const nextCount = playerCardCount + 1;
+            const fan = calculateCinematicFan(nextCount, isDesktop, SCALE);
+            const slot = fan[playerCardCount] ?? fan[fan.length - 1];
+            if (!slot) { onHandAnchor({ x, y, w, h }); return; }
+
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            const cw = CARD_W * handMul;
+            const ch = CARD_H * handMul;
+            onHandAnchor({
+                x: cx + slot.translateX - cw / 2,
+                y: cy + slot.translateY - ch / 2,
+                w: cw,
+                h: ch,
+                pose: { rx: 0, rz: slot.rotate, s: handMul * slot.scale },
+            });
         });
-    }, [onHandAnchor]);
+    }, [onHandAnchor, playerCardCount, isDesktop, SCALE, CARD_W, CARD_H, handMul]);
 
     useEffect(() => {
-        reportHand();
-    }, [reportHand, isDesktop]); // re-measure when layout mode changes
+        requestAnimationFrame(reportHand);
+    }, [reportHand]);
 
 
     const claimPending = useGameSelector(selectClaimPending);
