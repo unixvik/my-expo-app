@@ -53,7 +53,7 @@ export function Lobby({
     const players = useGameSelector(selectPlayersReady);
     const playerCount = players.length;
 
-    const BOTS_TO_ADD = 0;
+    const BOTS_TO_ADD = 2;
     const hasInitializedBots = useRef(false);
 
     useEffect(() => {
@@ -69,6 +69,7 @@ export function Lobby({
             room.send("addBot", { name: getRandomName() });
         }
 
+        room.send("playerReady");
         hasInitializedBots.current = true;
     }, [room, gameStatus]);
 

@@ -20,7 +20,7 @@ export function useGameCommands() {
             clearSelection: () => dispatch({ type: "UI_CLEAR_SELECTION" }),
             setSelection: (ids: string[]) => dispatch({ type: "UI_SET_SELECTION", ids }),
             animFlightDone: (id: number) => dispatch({ type: "ANIM_FLIGHT_DONE", id }),
-            animDealDone: () => dispatch({ type: "ANIM_DEAL_DONE" }),
+
         }),
         [dispatch]
     );

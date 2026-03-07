@@ -19,6 +19,7 @@ export type AnchorsRef = React.RefObject<{
     discard?: AnchorRect;
     hand?: AnchorRect;
     stage?: AnchorRect;
+    atu?: AnchorRect;
     seats: Record<string, AnchorRect | undefined>;
 }>;
 

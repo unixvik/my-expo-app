@@ -96,6 +96,7 @@ export function applyServerUpdate(state: RootState, nextGame: any, patch: any) {
     let nextUi = state.ui;
     let game = baseGame;
 
+
     const holding = !!state.ui.discardHold;
 
     if (holding) {

@@ -34,6 +34,7 @@
     "react-native-shape": "^1.1.2",
     "react-native-svg": "^15.15.3",
     "react-native-web": "^0.21.0",
+    "react-native-worklet": "^0.0.0",
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {

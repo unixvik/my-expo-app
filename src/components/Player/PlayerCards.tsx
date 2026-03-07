@@ -8,12 +8,10 @@ import { usePlayerCardFan } from "@/components/Player/hooks/usePlayerCardFan";
 import { useCardsLogic } from "@/components/Player/hooks/useCardsLogic";
 import DiscardButton from "@/components/Buttons/DiscardButton";
 import { selectCanDiscard, selectPlayerCards } from "@/state/machine/selector";
-
 export function PlayerCards() {
     const { isDesktop } = useDevice();
     const playerCards = useGameSelector(selectPlayerCards, shallowEqual);
     const canDiscard = useGameSelector(selectCanDiscard);
-    const dealingActive = useGameSelector(s => s.ui.dealingActive);
 
     const {
         onCardPress,
@@ -23,22 +21,16 @@ export function PlayerCards() {
         registerCardRect,
     } = useCardsLogic(playerCards);
 
-    // const visibleCards = useMemo(
-    //     () => playerCards.filter((c) => !pendingDiscardIds.has(c.id)),
-    //     [playerCards, pendingDiscardIds]
-    // );
-    const visibleCards = playerCards; // keep layout stable
-
-    const fanPositions = usePlayerCardFan(visibleCards.length);
+    const fanPositions = usePlayerCardFan(playerCards.length);
     const handMul = isDesktop ? 0.75 : 0.8;
 
     return (
-        <View className="flex-row items-center justify-center" style={[styles.cardsArea, dealingActive && styles.hidden]} pointerEvents="box-none">
+        <View className="flex-row items-center justify-center" style={styles.cardsArea} pointerEvents="box-none">
             {canDiscard ? (
                 <DiscardButton selectedCount={selectedIds.size} handleDiscard={handleDiscard} />
             ) : null}
 
-            {visibleCards.map((card, index) => {
+            {playerCards.map((card, index) => {
                 const position = fanPositions[index];
                 if (!position) return null;
 

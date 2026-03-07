@@ -2,6 +2,7 @@
 
 import React, {useEffect, useMemo, useRef, memo} from "react";
 import {View, Text, Animated, Easing, StyleSheet, Platform} from "react-native";
+import {useGameSelector} from "@/state/machine/useGameSelector";
 import {LinearGradient} from "expo-linear-gradient";
 import Svg, {Circle} from "react-native-svg";
 import * as Haptics from "expo-haptics";
@@ -171,7 +172,15 @@ const FloatingCard = memo(function FloatingCard({
 }) {
     const floatY = useRef(new Animated.Value(0)).current;
     const baseLift = useRef(new Animated.Value(0)).current;
+    const mountScale = useRef(new Animated.Value(0)).current;
     const floatLoop = useStableLoop();
+
+    // Pop-in on mount
+    useEffect(() => {
+        Animated.spring(mountScale, {
+            toValue: 1, tension: 220, friction: 8, useNativeDriver: true,
+        }).start();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         baseLift.setValue(-lift);
@@ -214,7 +223,11 @@ const FloatingCard = memo(function FloatingCard({
                 bottom: 10,
                 left: leftPx,
                 zIndex: index,
-                transform: [{rotate: `${angle}deg`}, {translateY: Animated.add(baseLift, floatY)}],
+                transform: [
+                    { scale: mountScale },
+                    { rotate: `${angle}deg` },
+                    { translateY: Animated.add(baseLift, floatY) },
+                ],
             }}
         >
             {card ? <CardFace card={card} scaleMul={scaleMul}/> : <CardBack isMini/>}
@@ -224,6 +237,7 @@ const FloatingCard = memo(function FloatingCard({
 
 // ─── Main OpponentSeat Component ─────────────────────────────────────────────
 export const OpponentSeat = memo(function OpponentSeat({
+                                                           id,
                                                            name,
                                                            cardCount,
                                                            showCards = 4,
@@ -234,6 +248,7 @@ export const OpponentSeat = memo(function OpponentSeat({
                                                            revealedCards,
                                                             handValue,
                                                        }: OpponentSeatProps) {
+    const effectiveCount = cardCount;
     useDevice();
 
     const activeStrong = !fxDisabled && isTurnActive;
@@ -245,11 +260,11 @@ export const OpponentSeat = memo(function OpponentSeat({
     const isRevealed = !!revealedCards?.length;
     const layoutCacheRef = useRef(new Map<string, ReturnType<typeof calculateCardFanLayout>>());
     const cardLayout = useMemo(() => {
-        const key = `${cardCount}|${showCards}`;
+        const key = `${effectiveCount}|${showCards}`;
         const cached = layoutCacheRef.current.get(key);
         if (cached) return cached;
 
-        const computed = calculateCardFanLayout(cardCount, showCards);
+        const computed = calculateCardFanLayout(effectiveCount, showCards);
         layoutCacheRef.current.set(key, computed);
 
         if (layoutCacheRef.current.size > 24) {
@@ -258,7 +273,7 @@ export const OpponentSeat = memo(function OpponentSeat({
         }
 
         return computed;
-    }, [cardCount, showCards]);
+    }, [effectiveCount, showCards]);
 
     const breatheAnim = useRef(new Animated.Value(1)).current;
     const breatheLoop = useStableLoop();
@@ -340,7 +355,7 @@ export const OpponentSeat = memo(function OpponentSeat({
     );
 
     // ✅ choose which cards are visible in the fan (in order)
-    const visibleCount = Math.min(showCards, cardCount);
+    const visibleCount = Math.min(showCards, effectiveCount);
     const visibleCards: Array<HandCard | undefined> = useMemo(() => {
         if (!isRevealed || !revealedCards) return Array.from({length: visibleCount}, () => undefined);
         return Array.from({length: visibleCount}, (_, i) => revealedCards[i]);
@@ -381,9 +396,9 @@ export const OpponentSeat = memo(function OpponentSeat({
                             />
                         ))}
 
-                        {cardCount > showCards && (
+                        {effectiveCount > showCards && (
                             <View style={styles.badge}>
-                                <Text style={styles.badgeText}>+{cardCount - showCards}</Text>
+                                <Text style={styles.badgeText}>+{effectiveCount - showCards}</Text>
                             </View>
                         )}
                     </View>

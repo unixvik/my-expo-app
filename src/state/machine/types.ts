@@ -163,9 +163,10 @@ export interface UiState {
 
     claimPending: boolean;
 
-    // Round-start dealing animation
-    dealSeq: number;       // increments each new round → triggers DealingCinematicOverlay
-    dealingActive: boolean; // true while the dealing animation is playing (hides PlayerCards)
+    // Per-seat card reveal counts during deal animation (managed by DrawPile).
+    // Keys: opponent stableId, "__player__" for local player, "__atu__" for ATU card.
+    dealReveal: Record<string, number>;
+    dealingActive: boolean;
 }
 
 export interface RootState {
@@ -264,4 +265,4 @@ export type Event =
     | { type: "GAME_ENDED"; payload: GameEndedPayload }
     | { type: "ANIM_FLIGHT_DONE"; id: number }
     | { type: "ANIM_CLEAR_QUEUE" }
-    | { type: "ANIM_DEAL_DONE" };
+    | { type: "ANIM_DEAL_CARD_REVEAL"; seatId: string };

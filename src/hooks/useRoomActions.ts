@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import type { Room } from "@colyseus/sdk";
-import type { ClaimRoomState } from "../colyseus/state";
+import type { ClaimRoomState } from "@/colyseus/state";
 
 export function useRoomActions(room: Room<ClaimRoomState> | null) {
     const setReady = useCallback(() => {

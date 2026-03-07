@@ -69,8 +69,7 @@ export function initialState(sessionId = ""): RootState {
 
             claimPending: false,
             discardPileDrawing: false,
-            dealSeq: 0,
-            dealingActive: false,
+            dealReveal: {},
         },
         prediction: initialPredictionState,
     };

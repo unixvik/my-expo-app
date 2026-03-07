@@ -2,7 +2,7 @@
 import React, { memo, useMemo } from "react";
 import { View, Text } from "react-native";
 import { useCardSize } from "@/hooks/useCardSize";
-import type { HandCard } from "@/types/game";
+import type {FaceCard, HandCard} from "@/types/game";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getCardTheme } from "./cardFace.theme";
 import { computeCardMetrics } from "./cardFace.metrics";
@@ -12,7 +12,7 @@ const isRed = (suit: string) =>
     ["♥", "♦", "hearts", "diamonds"].includes((suit ?? "").toLowerCase());
 
 type Props = {
-    card?: HandCard | null;
+    card?: FaceCard | null;
     isSelected?: boolean;
     isPending?: boolean;
     isMini?: boolean;

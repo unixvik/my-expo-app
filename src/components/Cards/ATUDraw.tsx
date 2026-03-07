@@ -1,62 +1,102 @@
 // src/components/Cards/ATUDraw.tsx
-import React, {memo} from "react";
-import {View, Text, StyleSheet} from "react-native";
-import {useCardSize} from "@/hooks/useCardSize";
-import {useGameSelector, shallowEqual} from "@/state/machine/useGameSelector";
-import {selectDeckReady, selectAtuCards} from "@/state/machine/selector";
-import {CardFace} from "@/components/Cards/CardFace/CardFace";
+import React, { memo, useEffect } from "react";
+import { View, Text, StyleSheet, Animated } from "react-native";
+import { useGameSelector, shallowEqual } from "@/state/machine/useGameSelector";
+import { selectAtuCards } from "@/state/machine/selector";
+import { CardFace } from "@/components/Cards/CardFace/CardFace";
+import { CardBack } from "@/components/Cards/CardBack";
+import { useAtuCinematic } from "./useAtuCinematics";
 
-type Props = { scaleMul?: number };
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+type Props = {
+    cardW: number;
+    cardH: number;
+    cardR: number;
+    scaleMul: number;
+    delayReveal?: boolean;
+};
 
-export default memo(function ATUDraw({scaleMul = 1}: Props) {
-    const {CARD_W, CARD_H, CARD_RADIUS, SCALE} = useCardSize();
-    const deckReady = useGameSelector(selectDeckReady);
+export const ATUDraw = memo(function ATUDraw({ cardW, cardH, cardR, scaleMul, delayReveal }: Props) {
     const atuCards = useGameSelector(selectAtuCards, shallowEqual);
+    // const atuRevealed = useGameSelector(s => (s.ui.dealReveal["__atu__"] ?? 0) > 0);
+const atuRevealed=true;
+    const { liftAnim, flipAnim, slideAnim, atuZIndex, triggerAtuReveal } = useAtuCinematic();
+
+    useEffect(() => {
+        // Trigger the cinematic sequence when the ATU card is officially revealed
+        if (atuCards.length > 0 && atuRevealed && !delayReveal) {
+            triggerAtuReveal();
+        }
+    }, [atuCards.length, atuRevealed, delayReveal, triggerAtuReveal]);
 
     const atu0 = atuCards.length > 0 ? atuCards[0] : null;
-    if (!deckReady || !atu0) return null;
+    if (!atu0) return null;
 
-    const mul = clamp(scaleMul, 0.6, 1.2);
-    const W = Math.round(CARD_W * mul);
-    const H = Math.round(CARD_H * mul);
-    const R = Math.round(CARD_RADIUS * mul);
+    // Interpolations for the cinematic phases
+    const translateY = Animated.add(
+        liftAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -cardH * 0.8] }),
+        slideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, cardH * 1] })
+    );
 
-    const borderW = Math.max(1, Math.round(3 * SCALE * mul));
-    const labelSize = Math.max(8, Math.round(15 * SCALE * mul));
-    const labelTop = Math.round(-18 * SCALE * mul);
+    const translateX = Animated.add(
+        liftAnim.interpolate({ inputRange: [0, 1], outputRange: [0, cardW * 1.2] }),
+        slideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -cardW * 0.5] })
+    );
+
+    const rotateY = flipAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ["0deg", "180deg"]
+    });
+
+    const rotateZ = slideAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ["0deg", "100deg"] // Final resting angle
+    });
+
+    // Handle face/back opacity during the 3D flip
+    const backOpacity = flipAnim.interpolate({ inputRange: [0, 0.5, 0.51, 1], outputRange: [1, 1, 0, 0] });
+    const frontOpacity = flipAnim.interpolate({ inputRange: [0, 0.5, 0.51, 1], outputRange: [0, 0, 1, 1] });
 
     return (
-        <View pointerEvents="none" className={"left-[95%] top-[15%]"} style={{
-            width: W, height: H, zIndex: -1,
-            transform: [
-                {rotateZ: "100deg"},  // Must include "deg" as a string
-                {rotateY: "-33deg"},
-                { scaleX: 0.86 }
-            ],
+        <Animated.View
+            pointerEvents="none"
+            style={[
+                styles.container,
+                {
+                    width: cardW,
+                    height: cardH,
+                    zIndex: atuZIndex,
+                    transform: [
+                        { perspective: 1000 },
+                        { translateY },
+                        { translateX },
+                        { rotateZ },
+                        { rotateY },
+                        { scaleX: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.86] }) }
+                    ],
+                }
+            ]}
+        >
+            {/* Card Back (Visible before flip) */}
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: backOpacity }]}>
+                <CardBack scaleMul={scaleMul} />
+            </Animated.View>
 
-
-        }}>
-            <View className={"-translate-y-4 -translate-x-0"} style={StyleSheet.absoluteFill}>
-                <Text style={[styles.label, {fontSize: labelSize, top: labelTop}]}>ATU</Text>
-                <View
-                    style={{
-                        width: W + 20,
-                        height: H,
-                        borderWidth: borderW,
-                        borderRadius: R,
-                        borderColor: "rgba(202,138,4,0.60)",
-                    }}
-                />
-            </View>
-            <CardFace card={atu0}/>
-            {/* render your ATU card here later */}
-
-        </View>
+            {/* Card Face & ATU Border (Visible after flip) */}
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: frontOpacity, transform: [{ rotateY: "180deg" }] }]}>
+                <View style={[StyleSheet.absoluteFill, { left: -10, width: cardW + 20, borderWidth: Math.max(1, 3 * scaleMul), borderRadius: cardR, borderColor: "rgba(202,138,4,0.60)" }]} />
+                <Text style={[styles.label, { fontSize: Math.max(8, 15 * scaleMul), top: -18 * scaleMul }]}>ATU</Text>
+                <CardFace card={atu0} />
+            </Animated.View>
+        </Animated.View>
     );
 });
 
 const styles = StyleSheet.create({
+    container: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+    },
     label: {
         position: "absolute",
         left: 0,

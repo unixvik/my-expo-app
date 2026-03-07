@@ -12,7 +12,7 @@ import { selectOpponentsInTurnOrder, selectPlayersReady } from "@/state/machine/
 import { useGameSelector, shallowEqual } from "@/state/machine/useGameSelector";
 import { useGameCommands } from "@/state/machine/useGameCommands";
 
-import ATUDraw from "@/components/Cards/ATUDraw";
+
 import { PlayerArea } from "@/components/Player/PlayerArea";
 import { DrawToolTip } from "@/components/Table/DrawToolTip";
 import { useDevice } from "@/hooks/useDevice";
@@ -22,7 +22,7 @@ import ClaimShoutedOverlay from "@/components/Overlays/ClaimAnnouncePopup";
 import { RoundHistoryPopup } from "@/components/Overlays/RoundHistoryPopup";
 import WaitingForPlayersOverlay from "@/components/Overlays/WaitingForPlayersOverlay";
 import {CardFlightOverlay} from "@/components/Overlays/CardFlightOverlay";
-import {StageZone} from "@/components/Table/StageZone";
+
 
 type Props = {
     room: any;
@@ -86,18 +86,15 @@ export function PlayArea({ room, sessionId }: Props) {
         discard: undefined as AnchorRect | undefined,
         hand: undefined as AnchorRect | undefined,
         stage: undefined as AnchorRect | undefined,
+        atu: undefined as AnchorRect | undefined,
         seats: {} as Record<string, AnchorRect | undefined>,
     });
 
 
-    const setDeckAnchor = useCallback((r: AnchorRect) => { anchorsRef.current.deck = r; }, []);
+    const setDeckAnchor    = useCallback((r: AnchorRect) => { anchorsRef.current.deck    = r; }, []);
     const setDiscardAnchor = useCallback((r: AnchorRect) => { anchorsRef.current.discard = r; }, []);
-    const setHandAnchor = useCallback((r: AnchorRect) => { anchorsRef.current.hand = r; }, []);
-    const setStageAnchor = useCallback((r: AnchorRect) => { anchorsRef.current.stage = r; }, []);
-    const setSeatAnchor = useCallback((id: string, r: AnchorRect) => { anchorsRef.current.seats[id] = r; }, []);
-
-    const stagedCards = useGameSelector((s) => s.ui.stagedCards, shallowEqual);
-
+    const setHandAnchor    = useCallback((r: AnchorRect) => { anchorsRef.current.hand    = r; }, []);
+    const setSeatAnchor    = useCallback((id: string, r: AnchorRect) => { anchorsRef.current.seats[id] = r; }, []);
 
     return (
         <View className="flex-1 relative overflow-hidden">
@@ -149,11 +146,11 @@ export function PlayArea({ room, sessionId }: Props) {
 
             <View className="absolute w-full h-[80%]" style={{ transform: TABLE_TRANSFORM }}>
                 <View className="flex-row w-full h-full items-center justify-center">
-                    <StageZone stagedCards={stagedCards} onAnchor={setStageAnchor} />
+                    {/*<StageZone stagedCards={stagedCards} onAnchor={setStageAnchor} />*/}
                     <View className="w-1/4 items-center justify-center">
-                        <View style={{ position: "absolute", bottom: 0, zIndex: 0 }}>
-                            <ATUDraw />
-                        </View>
+                        {/*<View style={{ position: "absolute", bottom: 0, zIndex: 0 }}>*/}
+                        {/*    <ATUDraw onAnchor={setAtuAnchor} />*/}
+                        {/*</View>*/}
                         <View style={{ zIndex: 1 }}>
                             <DrawPile drawCount={cardsRemaining} onDraw={drawDeck}  onAnchor={setDeckAnchor} />
                         </View>

@@ -1,6 +1,21 @@
 // src/components/Piles/DrawPile/DrawPile.tsx
-import React, { useMemo, useCallback } from "react";
-import { View, StyleSheet, Animated, Platform, useWindowDimensions } from "react-native";
+
+import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
+import { View, StyleSheet, Platform, useWindowDimensions } from "react-native";
+
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withTiming,
+    withDelay,
+    withSequence,
+    interpolate,
+    Easing,
+    SharedValue,
+    runOnJS
+} from "react-native-reanimated";
+
 import { CardBack } from "@/components/Cards/CardBack";
 import { useCardSize } from "@/hooks/useCardSize";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -8,220 +23,285 @@ import { useDrawPileLayout } from "./useDrawPileLayout";
 import { useDrawPileAnims } from "./useDrawPileAnims";
 import { makeDrawPileStyles } from "./drawPileStyles";
 import { poseTablePile, scene3d } from "@/theme/scene";
+import { useGameSelector } from "@/state/machine/useGameSelector";
+
+import { ATUDraw } from "@/components/Cards/ATUDraw";
+
+// ─── Constants & Physics ──────────────────────────────────────────────────────
+const CASCADE_N = 5;
+
+// Adjusted for Reanimated's physics engine
+const SPRING_CONFIG = { damping: 30, stiffness: 180 };
+const THUD_CONFIG = { mass: 1, stiffness: 200, damping: 15 };
+
+function cascadeJitter(i: number) {
+    return {
+        swingX: ((i * 123) % 40) +100,
+        initRz: ((i * 41 + 13) % 60) - 130,
+        finalRz: (((i * 37 + 7) % 11) - 5) * 0.5,
+    };
+}
+
 type Props = {
     drawCount: number;
-    onDraw?: () => void
-    onAnchor?: (r: AnchorRect) => void
+    onDraw?: () => void;
+    onAnchor?: (r: any) => void;
 };
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-type Pose3D = { rx?: string; ry?: string; rz?: number; s?: number };
-type AnchorRect = { x: number; y: number; w: number; h: number; pose?: Pose3D };
-
-/**
- * Extra “pile-only” shrink on phones.
- * You already scale cards globally via useCardSize().
- * This is the second dial to make *piles + effects* feel less huge on mobile.
- */
+// ─── Scaling Logic ──────────────────────────────────────────────────────────
 function usePileScaleMul() {
     const { width, height } = useWindowDimensions();
     const shortest = Math.min(width, height);
-
-    // A small-screen bias: below ~390pt shortest-side, shrink a bit.
-    // Above that, approach 1.0.
-    const raw = shortest / 390;
-
-    // Mobile gets slightly smaller; web stays neutral.
-    const platformBias = Platform.OS === "web" ? 1 : 0.82;
-
-    return clamp(raw * platformBias, 0.80, 1.0);
+    const raw = shortest / 414;
+    const platformBias = Platform.OS === "web" ? 1 : 0.85;
+    return Math.min(1.0, Math.max(0.75, raw * platformBias));
 }
 
-export function DrawPile({ drawCount, onDraw,onAnchor }: Props) {
+// ─── Sub-Components for Reanimated Hook Safety ──────────────────────────────
+
+// 1. DeckCard: Handles the static/bottom layers of the deck
+const DeckCard = ({ offset, anim, isTop, pileMul, styles, dims, deckImpactTilt }: any) => {
+    const cardStyle = useAnimatedStyle(() => ({
+        opacity: offset.opacity,
+        transform: [
+            { translateX: offset.translateX },
+            { translateY: isTop ? offset.translateY + (anim.topCardY?.value ?? 0) : offset.translateY },
+            { rotateZ: offset.rotate },
+            { scale: offset.scale },
+        ],
+    }));
+
+    const shimmerStyle = useAnimatedStyle(() => ({
+        width: dims.SHIMMER_W,
+        opacity: interpolate(deckImpactTilt.value, [0, 1], [0.3, 0.8]),
+        transform: [
+            { translateX: anim.shimmerX?.value ?? 0 },
+            { skewX: "-20deg" }
+        ],
+    }));
+
+    return (
+        <Animated.View style={[styles.card, cardStyle]}>
+            <CardBack scaleMul={pileMul} />
+            {isTop && (
+                <Animated.View pointerEvents="none" style={[staticStyles.shimmer, shimmerStyle]} />
+            )}
+        </Animated.View>
+    );
+};
+
+// 2. CascadeCard: Handles its own stagger animation autonomously
+const CascadeCard = ({ index, cardH, pileMul, styles, onFinished }: any) => {
+    const physics = useMemo(() => cascadeJitter(index), [index]);
+
+    const y = useSharedValue(-cardH * 4.2);
+    const x = useSharedValue(physics.swingX);
+    const op = useSharedValue(0);
+    const rz = useSharedValue(physics.initRz);
+    const sc = useSharedValue(1);
+
+    useEffect(() => {
+        const delay = index * 60;
+
+        y.value = withDelay(delay, withSpring(0, SPRING_CONFIG));
+        x.value = withDelay(delay, withSpring(0, SPRING_CONFIG));
+        sc.value = withDelay(delay, withSpring(1, SPRING_CONFIG));
+        op.value = withDelay(delay, withTiming(1, { duration: 150 }));
+
+        // Trigger completion callback on the very last item
+        if (index === CASCADE_N - 1) {
+            rz.value = withDelay(delay, withSpring(physics.finalRz, SPRING_CONFIG, (finished) => {
+                if (finished && onFinished) runOnJS(onFinished)();
+            }));
+        } else {
+            rz.value = withDelay(delay, withSpring(physics.finalRz, SPRING_CONFIG));
+        }
+    }, [index, cardH]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: op.value,
+        transform: [
+            { translateX: x.value },
+            { translateY: y.value },
+            { rotateZ: `${rz.value}deg` },
+            { scale: sc.value },
+        ],
+    }));
+
+    return (
+        <Animated.View style={[styles.card, animatedStyle]}>
+            <CardBack scaleMul={pileMul} />
+        </Animated.View>
+    );
+};
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
+export function DrawPile({ drawCount, onDraw, onAnchor }: Props) {
     const t = useTheme();
     const { CARD_W, CARD_H, CARD_RADIUS, SCALE } = useCardSize();
-    const wrapRef = React.useRef<View>(null);
+    const wrapRef = useRef<View>(null);
     const hasCards = drawCount > 0;
-
-    // ---- one extra dial just for pile sizing ----
     const pileMul = usePileScaleMul();
 
-    // Important: CARD_W/H already reflect SCALE. We only apply pileMul here.
     const cardW = Math.round(CARD_W * pileMul);
     const cardH = Math.round(CARD_H * pileMul);
     const cardR = Math.round(CARD_RADIUS * pileMul);
-
-    // Scale that drives “effects” (pads, fonts, offsets, shimmer widths)
     const fxScale = SCALE * pileMul;
 
+    // NOTE: Ensure `useDrawPileLayout` and `useDrawPileAnims` are returning SharedValues instead of Animated.Values
     const { dims, offsets } = useDrawPileLayout({
-        drawCount,
-        scale: fxScale,
-        cardW,
-        cardH,
-        cardR,
-        // keep pile in the same 3D universe as the table
-        perspective: scene3d.perspective,
+        drawCount, scale: fxScale, cardW, cardH, cardR, perspective: scene3d.perspective,
     });
 
     const anim = useDrawPileAnims({
-        enabled: hasCards,
-        cardW,
-        floatY: dims.FLOAT_Y,
-        topLift: dims.TOP_LIFT,
+        enabled: hasCards, cardW, floatY: dims.FLOAT_Y, topLift: dims.TOP_LIFT,
     });
 
-    const styles = useMemo(
-        () =>
-            makeDrawPileStyles({
-                cardW,
-                cardH,
-                cardR,
-                wrapPad: dims.WRAP_PAD,
-                glowPad: dims.GLOW_PAD,
-                innerPad: dims.INNER_PAD,
-                glowColor: t.components.piles.drawGlow,
-            }),
-        [cardW, cardH, cardR, dims.WRAP_PAD, dims.GLOW_PAD, dims.INNER_PAD, t.components.piles.drawGlow]
-    );
+    // ── Physical Shared Values ──────────────────────────────────────────────
+    const deckPunch = useSharedValue(1);
+    const deckImpactTilt = useSharedValue(0);
+    const [cascadeActive, setCascadeActive] = useState(false);
 
-    const report = useCallback(() => {
-        const node: any = wrapRef.current;
-        if (!node?.measureInWindow || !onAnchor) return;
+    // Selectors
+    const gameStatus = useGameSelector(s => s.game.gameStatus);
+    // ── Trigger Cascade & Settlement ────────────────────────────────────────
+    useEffect(() => {
+        if (gameStatus === "starting") {
+            console.log(`[DrawPile Effect] 🟢 TRIGGERING CASCADE! Setting cascadeActive to true.`);
+            setCascadeActive(true);
+            deckImpactTilt.value = 0;
+            deckPunch.value = 1;
+        }
+    }, [gameStatus]);
 
-        node.measureInWindow((x: number, y: number, w: number, h: number) => {
-            if (w <= 0 || h <= 0) return;
+    const handleCascadeComplete = useCallback(() => {
+        console.log(`[DrawPile] 🏁 Cascade animation finished visually.`);
 
-            onAnchor({
-                x, y, w, h,
-                pose: poseTablePile("draw"),
-            });
-        });
-    }, [onAnchor]);
+        // 1. Trigger the physical deck thud
+        deckPunch.value = withSequence(
+            withTiming(1.05, { duration: 80 }),
+            withSpring(1, { damping: 10, stiffness: 120 })
+        );
+        deckImpactTilt.value = withSequence(
+            withTiming(1, { duration: 100, easing: Easing.out(Easing.quad) }),
+            withSpring(0, { damping: 8, stiffness: 100 })
+        );
+
+        // 2. Safely unmount the cascade overlay after the thud settles
+        setTimeout(() => {
+            console.log(`[DrawPile] 🔴 Unmounting cascade overlay locally.`);
+            setCascadeActive(false);
+        }, 150);
+    }, [deckPunch, deckImpactTilt]);
 
 
-    const handlePressOut = useCallback(() => {
-        if (!hasCards) return;
-        anim.pressOut();
-        onDraw?.();
-    }, [hasCards, anim, onDraw]);
+    const styles = useMemo(() => makeDrawPileStyles({
+        cardW, cardH, cardR,
+        wrapPad: dims.WRAP_PAD,
+        glowPad: dims.GLOW_PAD,
+        innerPad: dims.INNER_PAD,
+        glowColor: t.components.piles.drawGlow,
+    }), [cardW, cardH, cardR, dims, t]);
+
+    // ── Main Wrapper Styles ─────────────────────────────────────────────────
+    const wrapperAnimatedStyle = useAnimatedStyle(() => {
+        const tiltBase = parseFloat(dims.PILE_TILT_X);
+        const tiltX = interpolate(deckImpactTilt.value, [0, 1], [tiltBase, tiltBase + 10]);
+
+        return {
+            transform: [
+                { perspective: dims.PERSPECTIVE },
+                { rotateX: `${tiltX}deg` },
+                { rotateY: dims.PILE_TILT_Y },
+                { rotateZ: dims.PILE_Z },
+                { scale: (anim.pressScale?.value ?? 1) * deckPunch.value },
+            ],
+        };
+    });
+
+    const badgeAnimatedStyle = useAnimatedStyle(() => ({
+        opacity: anim.glowOpacity?.value ?? 1,
+        transform: [{ scale: deckPunch.value }]
+    }));
+
+    const labelAnimatedStyle = useAnimatedStyle(() => ({
+        opacity: anim.glowOpacity?.value ?? 1,
+        transform: [{ translateY: 10 * fxScale }],
+    }));
 
     return (
-        <View
-            style={styles.wrapper}
-            pointerEvents="box-none"
-            ref={wrapRef}
-            onLayout={() => requestAnimationFrame(report)}
-        >
+        <View style={styles.wrapper} pointerEvents="box-none" ref={wrapRef}>
             <Animated.View
-                style={{
-                    transform: [
-                        { perspective: dims.PERSPECTIVE },
-                        { rotateX: dims.PILE_TILT_X },
-                        { rotateY: dims.PILE_TILT_Y },
-                        { scale: anim.pressScale },
-                        { rotateZ: dims.PILE_Z },
-                    ],
-                }}
+                style={wrapperAnimatedStyle}
                 onStartShouldSetResponder={() => hasCards}
                 onResponderGrant={anim.pressIn}
-                onResponderRelease={handlePressOut}
+                onResponderRelease={useCallback(() => {
+                    if (!hasCards) return;
+                    anim.pressOut();
+                    onDraw?.();
+                }, [hasCards, anim, onDraw])}
             >
                 <View style={styles.deck}>
-                    {offsets.map((o, idx) => (
-                        <Animated.View
-                            key={idx}
-                            style={[
-                                styles.card,
-                                {
-                                    opacity: o.opacity,
-                                    transform: [
-                                        { translateX: o.translateX },
-                                        { translateY: o.translateY },
-                                        { rotateZ: o.rotate as any },
-                                        { scale: o.scale },
-                                        ...(o.isTop ? [{ translateY: anim.topCardY }] : []),
-                                    ],
-                                },
-                            ]}
-                        >
-                            {/* Back scales with the pileMul dial so cards+effects shrink together */}
-                            <CardBack scaleMul={pileMul} />
+                    {/* 1. DECK OFFSETS (Rendered bottom layer) */}
+                    {offsets.map((o: any, idx: number) => (
+                        <DeckCard
+                            key={`deck-${idx}`}
+                            offset={o}
+                            anim={anim}
+                            isTop={o.isTop && hasCards}
+                            pileMul={pileMul}
+                            styles={styles}
+                            dims={dims}
+                            deckImpactTilt={deckImpactTilt}
+                        />
+                    ))}
 
-                            {o.isTop && hasCards && (
-                                <Animated.View
-                                    pointerEvents="none"
-                                    style={[
-                                        staticStyles.shimmer,
-                                        {
-                                            width: dims.SHIMMER_W,
-                                            transform: [{ translateX: anim.shimmerX }, { skewX: "-20deg" as any }],
-                                        },
-                                    ]}
-                                />
-                            )}
+                    {/* 2. ATU CARD (Rendered above the deck, before flip) */}
+                    <ATUDraw
+                        cardW={cardW}
+                        cardH={cardH}
+                        cardR={cardR}
+                        scaleMul={pileMul}
+                        delayReveal={cascadeActive}
+                    />
 
-                            {o.isTop && (
-                                <View
-                                    pointerEvents="none"
-                                    style={[
-                                        staticStyles.edgeHighlight,
-                                        {
-                                            borderTopLeftRadius: cardR,
-                                            borderTopRightRadius: cardR,
-                                        },
-                                    ]}
-                                />
-                            )}
-                        </Animated.View>
+                    {/* 3. SPECTACULAR CASCADE OVERLAY (Rendered absolute top) */}
+                    {cascadeActive && Array.from({ length: CASCADE_N }).map((_, i) => (
+                        <CascadeCard
+                            key={`cascade-${i}`}
+                            index={i}
+                            cardH={cardH}
+                            pileMul={pileMul}
+                            styles={styles}
+                            onFinished={handleCascadeComplete}
+                        />
                     ))}
                 </View>
 
+                {/* Draw Counter Badge */}
                 {hasCards && (
-                    <View
-                        style={[
-                            staticStyles.badge,
-                            {
-                                top: -dims.BADGE_OFF,
-                                right: -dims.BADGE_OFF,
-                                width: Math.round(cardW * 0.5),
-                                height: Math.round(cardH * 0.28),
-                                borderRadius: Math.round(13 * fxScale),
-                                backgroundColor: t.components.piles.counterBg,
-                                borderColor: t.components.piles.drawGlow,
-                                shadowColor: t.components.piles.drawGlow,
-                            },
-                        ]}
-                    >
-                        <Animated.Text
-                            style={[
-                                staticStyles.badgeText,
-                                {
-                                    opacity: anim.glowOpacity,
-                                    fontSize: dims.BADGE_FONT,
-                                    color: "rgba(255,255,255,0.92)",
-                                },
-                            ]}
-                        >
+                    <Animated.View style={[staticStyles.badge, {
+                        top: -dims.BADGE_OFF,
+                        right: -dims.BADGE_OFF,
+                        width: Math.round(cardW * 0.5),
+                        height: Math.round(cardH * 0.28),
+                        borderRadius: Math.round(13 * fxScale),
+                        backgroundColor: t.components.piles.counterBg,
+                        borderColor: t.components.piles.drawGlow,
+                    }, badgeAnimatedStyle]}>
+                        <Animated.Text style={[staticStyles.badgeText, { fontSize: dims.BADGE_FONT }]}>
                             {drawCount}
                         </Animated.Text>
-                    </View>
+                    </Animated.View>
                 )}
             </Animated.View>
 
             {hasCards && (
-                <Animated.Text
-                    style={[
-                        staticStyles.label,
-                        {
-                            opacity: anim.glowOpacity,
-                            fontSize: dims.LABEL_FONT,
-                            letterSpacing: Math.round(3 * fxScale),
-                            color: t.components.piles.drawGlow,
-                            transform: [{ translateY: Math.round(10 * fxScale) }],
-                        },
-                    ]}
-                >
+                <Animated.Text style={[staticStyles.label, {
+                    fontSize: dims.LABEL_FONT,
+                    color: t.components.piles.drawGlow,
+                }, labelAnimatedStyle]}>
                     DRAW
                 </Animated.Text>
             )}
@@ -230,30 +310,8 @@ export function DrawPile({ drawCount, onDraw,onAnchor }: Props) {
 }
 
 const staticStyles = StyleSheet.create({
-    shimmer: {
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        backgroundColor: "rgba(255,255,255,0.16)",
-    },
-    edgeHighlight: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 1,
-        backgroundColor: "rgba(255,255,255,0.05)",
-    },
-    badge: {
-        position: "absolute",
-        borderWidth: 1.5,
-        alignItems: "center",
-        justifyContent: "center",
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: Platform.OS === "ios" ? 0.45 : 0.8,
-        shadowRadius: 8,
-        elevation: 10,
-    },
-    badgeText: { fontWeight: "800", letterSpacing: 0.5 },
-    label: { marginTop: 10, fontWeight: "800" },
+    shimmer: { position: "absolute", top: 0, bottom: 0, backgroundColor: "rgba(255,255,255,0.2)" },
+    badge: { position: "absolute", borderWidth: 1.5, alignItems: "center", justifyContent: "center", elevation: 10, shadowRadius: 8, shadowOpacity: 0.45 },
+    badgeText: { fontWeight: "900", color: "#FFF" },
+    label: { marginTop: 10, fontWeight: "800", textAlign: "center", letterSpacing: 2 },
 });

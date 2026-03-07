@@ -5,11 +5,11 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 export function useDrawPileLayout(opts: {
     drawCount: number;
-    scale: number; // drives pads/fonts/offsets
+    scale: number;
     cardW: number;
     cardH: number;
     cardR: number;
-    perspective: number; // from scene3d
+    perspective: number;
 }) {
     const { drawCount, scale, cardW, cardH, cardR, perspective } = opts;
 
@@ -30,22 +30,10 @@ export function useDrawPileLayout(opts: {
         const DY = 3.0 * scale;
 
         return {
-            WRAP_PAD,
-            GLOW_PAD,
-            INNER_PAD,
-            SHIMMER_W,
-            BADGE_OFF,
-            BADGE_FONT,
-            LABEL_FONT,
-            FLOAT_Y,
-            TOP_LIFT,
-            DX,
-            DY,
-
-            // Use scene perspective, slightly tightened so pile doesn't look “flat” on small screens
+            WRAP_PAD, GLOW_PAD, INNER_PAD, SHIMMER_W,
+            BADGE_OFF, BADGE_FONT, LABEL_FONT,
+            FLOAT_Y, TOP_LIFT, DX, DY,
             PERSPECTIVE: Math.round(perspective * 0.85),
-
-            // Keep your existing pile rig (feels good), but this is now centralized
             PILE_TILT_X: "33deg" as const,
             PILE_TILT_Y: "6deg" as const,
             PILE_Z: "5deg" as const,

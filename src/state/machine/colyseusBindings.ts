@@ -434,8 +434,8 @@ export function bindRoom(
     room.onMessage("claimResult", onClaimResult);
     room.onMessage("roundEnded", onRoundEnded);
     room.onMessage("gameEnded", onGameEnded);
-    room.onMessage("playerDrew", onPlayerDrew);
-    room.onMessage("playerDiscarded", onPlayerDiscarded);
+    // room.onMessage("playerDrew", onPlayerDrew);
+    // room.onMessage("playerDiscarded", onPlayerDiscarded);
     room.onMessage("ACTION", onAction);
 
     // ---------------- CLEANUP ----------------
@@ -446,8 +446,8 @@ export function bindRoom(
         safeOffMessage(room, "claimResult", onClaimResult);
         safeOffMessage(room, "roundEnded", onRoundEnded);
         safeOffMessage(room, "gameEnded", onGameEnded);
-        safeOffMessage(room, "playerDrew", onPlayerDrew);
-        safeOffMessage(room, "playerDiscarded", onPlayerDiscarded);
+        // safeOffMessage(room, "playerDrew", onPlayerDrew);
+        // safeOffMessage(room, "playerDiscarded", onPlayerDiscarded);
         safeOffMessage(room, "ACTION", onAction);
 
         try {

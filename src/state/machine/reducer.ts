@@ -247,19 +247,8 @@ export function reducer(state: RootState, ev: Event): RootState {
         // -----------------------------
         // Hand & opponents
         // -----------------------------
-        case "HAND_UPDATED": {
-            if (state.ui.endFlow) return state;
-            const wasEmpty = state.game.playerCards.length === 0;
-            const gettingCards = ev.cards.length > 0;
-            const isRoundStart = wasEmpty && gettingCards && state.game.gameStatus === "playing";
-            return {
-                ...state,
-                game: { ...state.game, playerCards: ev.cards },
-                ui: isRoundStart
-                    ? { ...state.ui, dealSeq: (state.ui.dealSeq ?? 0) + 1, dealingActive: true }
-                    : state.ui,
-            };
-        }
+        case "HAND_UPDATED":
+            return state.ui.endFlow ? state : { ...state, game: { ...state.game, playerCards: ev.cards } };
 
         case "OPPONENT_UPDATED": {
             if (state.ui.endFlow && state.game.opponents.some((o) => o.id === ev.opponent.id)) return state;
@@ -734,9 +723,6 @@ export function reducer(state: RootState, ev: Event): RootState {
                 },
             };
         }
-
-        case "ANIM_DEAL_DONE":
-            return { ...state, ui: { ...state.ui, dealingActive: false } };
 
         default:
             return state;
