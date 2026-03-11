@@ -1,0 +1,46 @@
+import React, {useMemo} from 'react';
+import {useTheme} from '@/hooks/useTheme';
+import {createStyles} from './GameBoard.styles';
+import {TableSurface} from "@/components/Table/TableSurface";
+import {useResponsive} from "@/hooks/useResponsive";
+import {CenterTable} from "@/components/Table/CenterTable";
+import {OpponentsLayer} from "@/components/Layers/OpponentsLayer";
+import {PlayerLayer} from "@/components/Layers/PlayerLayer";
+import { View } from "react-native";
+
+export const GameBoard = () => {
+    const theme = useTheme();
+
+    // 🌟 1. Track screen size dynamically
+    const {scale, moderateScale, isLandscape} = useResponsive(); // 🌟 One hook for everything
+
+    // 🌟 2. Generate the scale functions for the CURRENT frame
+    const styles = useMemo(() =>
+            createStyles(theme, scale, moderateScale, isLandscape),
+        [theme, scale]
+    );
+
+   return (
+        <View style={styles.board}>
+            {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
+            <View style={styles.tableContainer}>
+                {/* 1. THE 3D ENVIRONMENT */}
+                <View style={[styles.table3D, isLandscape && {flex: 1 }]}>
+                    <View style={styles.tableArea}>
+                        {/*TABLE Surface*/}
+                        <TableSurface/>
+
+                        {/*CENTER TABLE*/}
+                        <CenterTable/>
+
+                    </View>
+                </View>
+            </View>
+            {/* 2. OPPONENTS LAYER */}
+            <OpponentsLayer/>
+            {/* 3. PLAYER ZONE */}
+            <PlayerLayer/>
+
+        </View>
+    );
+};
