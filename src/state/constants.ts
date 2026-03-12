@@ -6,12 +6,12 @@
 // 1. GEOMETRY & RATIOS
 export const CARD_ASPECT_RATIO = 1.45; // Height / Width
 export const CARD_RADIUS_RATIO = 0.2;  // Radius / Width
-export const BASE_CARD_WIDTH   = 40;   // Design-unit width of center/table cards
+export const BASE_CARD_WIDTH   = 45;   // Design-unit width of center/table cards
 export const PLAYER_CARD_WIDTH = 40;   // Design-unit width of hand cards
 export const TABLE_OVAL_RATIO  = 1.8;  // Aspect ratio of the table oval
 export const CARD_ATU_ROTATE_Z = "100deg";
 export const TABLE_TILT = 38;         // Degrees for 3D Perspective
-export const TABLE_PERSPECTIVE = 600;
+export const TABLE_PERSPECTIVE = 800;
 
 
 // 3. SANDIA PHYSICS (Reanimated Spring Configs)

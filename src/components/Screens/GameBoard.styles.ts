@@ -1,5 +1,5 @@
-import { StyleSheet, ViewStyle } from 'react-native';
-import { GameTheme } from '@/theme/themeTokens';
+import {StyleSheet, ViewStyle} from 'react-native';
+import {GameTheme} from '@/theme/themeTokens';
 import {
     CARD_ASPECT_RATIO,
     CARD_RADIUS_RATIO,
@@ -11,16 +11,15 @@ import {
     TABLE_OVAL_RATIO,
 } from '@/state/constants';
 
-const seatTop         = 5  * TABLE_OVAL_RATIO;
-const seatBottomLeft  = 20 * TABLE_OVAL_RATIO;
+const seatTop = 5 * TABLE_OVAL_RATIO;
+const seatBottomLeft = 20 * TABLE_OVAL_RATIO;
 const seatBottomRight = 20 * TABLE_OVAL_RATIO;
 
 export const createStyles = (
     theme: GameTheme,
     scale: (size: number) => number,
     moderateScale: (size: number) => number,
-    isLandscape:boolean,
-
+    isLandscape: boolean,
 ) =>
     StyleSheet.create({
         board: {
@@ -49,8 +48,8 @@ export const createStyles = (
             justifyContent: "center",
             alignItems: "center",
             transform: [
-                { perspective: TABLE_PERSPECTIVE },
-                { rotateX: `${TABLE_TILT}deg` },
+                {perspective: TABLE_PERSPECTIVE},
+                {rotateX: `${TABLE_TILT}deg`},
             ],
         },
 
@@ -82,7 +81,7 @@ export const createStyles = (
             top: seatTop,
             left: '50%',
             // 🌟 Crucial: This must be EXACTLY half of scaled minWidth (90/2 = 45) to stay centered
-            transform: [{ translateX: -scale(45) }]
+            transform: [{translateX: -scale(45)}]
         },
         seat_TOP_LEFT: {
             top: '15%',
@@ -121,7 +120,7 @@ export const createStyles = (
 
         tableArea: {
             transform: [
-                { translateY: "-5%" }
+                {translateY: "-15%"}
             ],
             height: "100%",
             aspectRatio: TABLE_OVAL_RATIO,
@@ -137,7 +136,7 @@ export const createStyles = (
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
-            gap: scale(300),
+            gap: scale(100 * TABLE_OVAL_RATIO),
             zIndex: Z_INDEX.PILES,
         },
 
@@ -145,7 +144,7 @@ export const createStyles = (
             width: scale(BASE_CARD_WIDTH),
             height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
             borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
-            backgroundColor: theme.cards.cardFront.backgroundColor,
+            // backgroundColor: theme.cards.cardFront.backgroundColor,
 
             justifyContent: "center",
             alignItems: "center",
@@ -155,27 +154,36 @@ export const createStyles = (
             width: scale(BASE_CARD_WIDTH),
             height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
             borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
-            backgroundColor: theme.cards.cardBack.backgroundColor,
+            // backgroundColor: theme.cards.cardBack.backgroundColor,
             justifyContent: "center",
             alignItems: "center",
             ...rnShadow("medium"),
         },
+
+        tableCardArtwork: {
+            width: '100%',
+            height: '100%',
+            borderRadius: scale(8),
+            backgroundColor: theme.cards.cardFront.backgroundColor, // Gives the facedown deck a solid base
+            overflow: 'hidden', // Clips the card art perfectly
+        },
         slotLabel: {
-            fontSize: moderateScale(12),
-            fontWeight: "900",
+            fontSize: moderateScale(8),
+            fontWeight: "800",
             opacity: 0.8,
-            position: "absolute",
-            top: -scale(25),
+            // position: "absolute",
+            // overflow: "visible",
+            top: -scale(15),
             color: theme.text.primary,
         },
 
         atuSlot: {
             position: "absolute",
-            left: scale(40),
+            left: scale(30),
             top: scale(20),
             borderColor: theme.accent,
             borderWidth: scale(2),
-            transform: [{ rotateZ: CARD_ATU_ROTATE_Z }],
+            transform: [{rotateZ: CARD_ATU_ROTATE_Z}],
             zIndex: Z_INDEX.ATU,
             ...rnShadow("contact"),
         },
@@ -187,33 +195,48 @@ export const createStyles = (
 
         playerZone: {
             position: "absolute",
-            bottom: "10%",
+            bottom: "5%",
             width: "100%",
-            alignItems:"center",
+            alignItems: "center",
             // 🌟 In Landscape, we limit the height so it doesn't push the table off-screen
             height: isLandscape ? scale(100) : scale(100),
             justifyContent: "center",
             verticalAlign: "bottom",
-            zIndex: Z_INDEX.HAND,
+            zIndex: Z_INDEX.HAND+1000,
             // marginBottom: "10%",
         },
 
         myAreaHeader: {
             flexDirection: "row",
             justifyContent: "center",
-            marginBottom: scale(12),
+            marginBottom: scale(0),
             zIndex: Z_INDEX.HAND,
         },
 
 
+        // playerCard: {
+        //     // 🌟 Shrink the cards slightly in landscape so they fit the short screen
+        //     width: scale(PLAYER_CARD_WIDTH),
+        //     height: scale(PLAYER_CARD_WIDTH) * CARD_ASPECT_RATIO,
+        //     borderRadius: scale(8),
+        //     backgroundColor: theme.cards.cardFront.backgroundColor,
+        //     ...rnShadow("heavy"),
+        // },
 
-        playerCard: {
-            // 🌟 Shrink the cards slightly in landscape so they fit the short screen
+        // 🌟 1. The Physics Box (Casts the shadow, holds the math)
+        playerCardWrapper: {
             width: scale(PLAYER_CARD_WIDTH),
             height: scale(PLAYER_CARD_WIDTH) * CARD_ASPECT_RATIO,
+            ...rnShadow("heavy"),
+            // CRITICAL: Never put overflow: 'hidden' or backgroundColor here!
+        },
+
+// 🌟 2. The Canvas (Clips the artwork)
+        playerCardArtwork: {
+            flex: 1, // Fills the wrapper perfectly
             borderRadius: scale(8),
             backgroundColor: theme.cards.cardFront.backgroundColor,
-            ...rnShadow("medium"),
+            overflow: 'hidden', // Keeps your card images safely inside the rounded corners
         },
 
         claimButton: {
@@ -241,8 +264,6 @@ export const createStyles = (
             zIndex: Z_INDEX.UI_OVERLAYS,
             ...rnShadow("heavy"),
         },
-
-
         actionText: {
             color: theme.background,
             fontWeight: "900",
@@ -253,25 +274,28 @@ export const createStyles = (
 
         myArea: {
             flexDirection: "row",
-            // 🌟 1. Push everything to the bottom edge so the cards stick up, not down
             alignItems: "flex-end",
-            justifyContent: "space-between",
 
-            // 🌟 2. I highly recommend 100% here. At 50%, your hand will be forced
-            // to the left side of the screen instead of true center.
-            width: "45%",
-            borderRadius: 15,
-            // 🌟 3. Give the red bar a fixed, short height (e.g., just tall enough for the text)
+            // 🌟 1. The Magic Key for dynamic resizing:
+            alignSelf: "center",
+
+            // 🌟 2. Remove justifyContent: "space-between" (let the items pack together naturally)
+            // justifyContent: "center", // Optional, but usually default for wrapped content
+
+            // 🌟 3. Add a gap so the avatar and hand value don't touch the cards
+            gap: scale(16),
+
+            minWidth: "25%",
+            borderRadius: 25,
             height: scale(60),
+            paddingHorizontal: scale(10),
 
-            paddingHorizontal: scale(20),
+            // To see the resizing work clearly:
             backgroundColor: theme.playerZone.backgroundArea,
 
-            // 🌟 4. The Magic Keys: Allow children to render outside the bounds
-            // and ensure the container renders above the 3D table.
             overflow: "visible",
-            zIndex: Z_INDEX.HAND, // or 9999
-            elevation: 20, // For Android
+            zIndex: Z_INDEX.HAND,
+            elevation: 20,
         },
 
         handContainer: {
@@ -288,21 +312,33 @@ export const createStyles = (
 
             // Optional: If you want the cards to float slightly *above* the red bar,
             // add a negative bottom margin to push them up:
-            marginBottom: scale(10),
+            marginBottom: scale(20),
         },
-// 🌟 The Magic Fix
+// 🌟 4. Fixed Symmetrical Anchors
         sideZone: {
-            flex: 1, // Both sides take exactly 50% of the remaining empty space
-            // marginLeft: 20,
-            // justifyContent: "flex-start",
-            // alignContent: "flex-start",
-            verticalAlign:"middle",
-            // justifyContent: "flex-start",
-            alignSelf: "center",
-            maxWidth: 100,
+            // Both sides must have the EXACT same width to keep the cards perfectly centered
+            width: scale(60),
+            // height: "100%", // Fill the 60px height of myArea
+            justifyContent: "center",
+            alignItems: "center",
+            paddingBottom: scale(10), // Adjust to align with the cards visually
         },
 
-
+        sideZoneRight: {
+            // Exactly matches sideZone
+            width: scale(60),
+            height: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingBottom: scale(10),
+        },
+        sideZoneRightHand: {
+            color: theme.text.secondary,
+            alignItems: "center",
+            alignSelf: "center",
+            fontSize: 20,
+            fontWeight: 500
+        },
         compassWrapper: {
             width: 72,
             height: 72,
@@ -312,17 +348,20 @@ export const createStyles = (
         avatarWrap: {
             width: 54,
             height: 54,
-            borderRadius: 27,
+            padding: "35%",
+            borderRadius: 45,
             overflow: "hidden",
             justifyContent: "center",
             alignItems: "center",
             borderWidth: 1,
+
+
             borderColor: "rgba(140, 100, 255, 0.3)",
         },
         avatarLetter: {
             color: "rgba(200, 180, 255, 0.95)",
             fontWeight: "900",
-            fontSize: 20,
-            fontStyle: "italic",
+            fontSize: 40,
+            // fontStyle: "italic",
         },
     });

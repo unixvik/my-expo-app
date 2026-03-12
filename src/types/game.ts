@@ -15,6 +15,7 @@ export interface PlayerData {
     ready: boolean;
     awaitingMandatoryDraw: boolean;
     hand: CardData[];
+    handValue: number;
     stagedDiscardIds: string[];
     toDiscardCard: CardData[];
     totalPoints?: number;

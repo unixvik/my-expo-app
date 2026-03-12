@@ -1,6 +1,6 @@
 // Auto-generated - DO NOT EDIT
 
-import { Schema, type, ArraySchema, MapSchema } from "@colyseus/schema";
+import {ArraySchema, MapSchema, Schema, type} from "@colyseus/schema";
 
 export class Card extends Schema {
 

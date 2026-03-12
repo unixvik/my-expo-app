@@ -27,6 +27,7 @@ interface GameStore {
 
     // 3. Local UI State
     local: {
+        isClaimOpen: boolean;
         selectedDiscardIds: string[];
         themeId: GameTheme['id'];
         selectedCardId: string | null;
@@ -41,6 +42,7 @@ interface GameStore {
 
     selectCard: (cardId: string | null) => void;
     checkIfMyTurn: (mySessionId: string) => void;
+    checkIfClaimOpen: (mySessionId: string) => void;
     setTheme: (id: GameTheme['id']) => void;
 
     toggleCardSelection: (card: string) => void;
@@ -85,6 +87,7 @@ export const useGameStore = create<GameStore>()(
             selectedCardId: null,
             isMyTurn: false,
             selectedDiscardIds: [],
+            isClaimOpen: false,
         },
 
         setConn: (newStatus) => set((state) => {
@@ -120,6 +123,17 @@ export const useGameStore = create<GameStore>()(
 
         checkIfMyTurn: (mySessionId) => set((state) => {
             state.local.isMyTurn = state.server.currentTurn === mySessionId;
+        }),
+
+        checkIfClaimOpen: (mySessionId) => set((state) => {
+            // 1. Check if it's actually their turn
+            const isMyTurn = state.server.currentTurn === mySessionId;
+
+            // 2. Check if the game has progressed far enough to allow claiming
+            const isRoundEligible = state.server.round >= state.server.claimRoundOpen;
+
+            // 3. Store the result in the local UI state, leaving the server state pure
+            state.local.isClaimOpen = isMyTurn && isRoundEligible;
         }),
 
         setTheme: (id) => set((state) => {

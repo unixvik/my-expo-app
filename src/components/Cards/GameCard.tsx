@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
+import {StyleProp, View, ViewStyle} from 'react-native';
 import { CardFace } from './CardFace';
 import { CardBack } from './CardBack';
 import { CardData } from '@/types/game';
@@ -13,24 +13,16 @@ interface GameCardProps {
     style?: StyleProp<ViewStyle>;
 }
 
-export const GameCard = React.memo(({
-                                        card,
-                                        isFacedown = false,
-                                        isSelected = false,
-                                        cardWidth = PLAYER_CARD_WIDTH,
-                                        style
-                                    }: GameCardProps) => {
-
-    if (isFacedown || !card) {
-        return <CardBack cardWidth={cardWidth} />;
-    }
-
+export const GameCard = ({ card, isFacedown=false,isSelected, style,}: GameCardProps) => {
     return (
-        <CardFace
-            card={card}
-            isSelected={isSelected}
-            cardWidth={cardWidth}
-            style={style}
-        />
+        // 🌟 The inner container shapes the actual artwork
+        <View style={style}>
+            {/* If it's the front of the card: */}
+            {!isFacedown ? ( <CardFace card={card} /> ) :
+                (
+                <CardBack />
+                )};
+
+        </View>
     );
-});
+};

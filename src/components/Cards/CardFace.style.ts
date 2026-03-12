@@ -2,7 +2,7 @@
 
 import { StyleSheet } from 'react-native';
 import { GameTheme } from '@/theme/themeTokens';
-import {rnShadow} from "@/state/constants";
+import {rnShadow, TABLE_OVAL_RATIO} from "@/state/constants";
 
 export const createStyles = (
     theme: GameTheme,
@@ -32,26 +32,26 @@ export const createStyles = (
     },
     cornerTopLeft: {
         position: 'absolute',
-        top: scale(cardWidth * 0.04),
+        top: scale(cardWidth * 0.07),
         left: scale(cardWidth * 0.07),
         alignItems: 'center',
-        lineHeight: 10,
+        lineHeight: 1,
     },
     cornerBottomRight: {
         position: 'absolute',
-        bottom: scale(cardWidth * 0.04),
+        bottom: scale(cardWidth * 0.07),
         right: scale(cardWidth * 0.07),
         alignItems: 'center',
         transform: [{ rotate: '180deg' }],
     },
     cornerRank: {
-        fontSize: moderateScale(cardWidth * 0.5),
+        fontSize: moderateScale(cardWidth * 0.33),
         fontWeight: '800'
     },
     cornerSuit: {
-        fontSize: moderateScale(cardWidth * 0.375),
+        fontSize: moderateScale(cardWidth * 0.23),
         transform: [ {
-            translateY: -6
+            translateY: moderateScale(cardWidth * -0.04)*TABLE_OVAL_RATIO,
         }]
     },
     centerWrap: {
@@ -60,6 +60,6 @@ export const createStyles = (
         alignItems: 'center'
     },
     centerSuit: {
-        fontSize: scale(cardWidth * 0.625),
+        fontSize: scale(cardWidth * 0.5),
     },
 });

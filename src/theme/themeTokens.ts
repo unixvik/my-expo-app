@@ -62,7 +62,7 @@ export interface GameTheme {
     text: {
         primary: string;
         secondary: string;
-    };
+    }
     shadow: string;
     table: TableTheme;
     playerZone: PlayerZone;
@@ -73,9 +73,10 @@ export interface ThemeTokens {
     surface: string
     accent: string
 
-    textPrimary: string
-    textSecondary: string
-
+    text: {
+        primary: string
+        secondary: string
+    }
     suitRed: string
     suitBlack: string
     shadow: string
@@ -95,14 +96,16 @@ export interface ThemeTokens {
         backgroundArea: string;
     }
 }
+
 export const midnightTokens: ThemeTokens = {
     background: "#37373a",
     surface: "#255bb3",
     accent: "#656871",
 
-    textPrimary: "#F8FAFC",
-    textSecondary: "#94A3B8",
-
+    text: {
+        primary: "#F8FAFC",
+        secondary: "#3371af",
+    },
     suitRed: "#ba2525",
     suitBlack: "#000",
 
@@ -142,9 +145,10 @@ export const casinoTokens: ThemeTokens = {
     surface: "#1b5e20",
     accent: "#ffd700",
 
-    textPrimary: "#ffffff",
-    textSecondary: "#94a3b8",
-
+    text: {
+        primary: "#ffffff",
+        secondary: "#94a3b8",
+    },
     suitRed: "#e53935",
     suitBlack: "#000",
 

@@ -46,8 +46,8 @@ export function makeTheme(tokens: ThemeTokens): GameTheme {
         },
 
         text: {
-            primary: tokens.textPrimary,
-            secondary: tokens.textSecondary,
+            primary: tokens.text.primary,
+            secondary: tokens.text.secondary,
         },
 
         shadow: tokens.shadow,

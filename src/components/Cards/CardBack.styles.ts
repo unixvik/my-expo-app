@@ -9,6 +9,10 @@ export const createStyles = (
 
     const emblem = theme.cards.cardBack.emblem;
 
+    // @ts-ignore
+    // @ts-ignore
+    // @ts-ignore
+    // @ts-ignore
     return StyleSheet.create({
 
         container: {

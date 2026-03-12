@@ -17,9 +17,10 @@ import { rnShadow } from '@/state/constants';
 
 interface ClaimButtonProps {
     onPress: () => void;
+    enabled: boolean;
 }
 
-export const ClaimButton = ({ onPress }: ClaimButtonProps) => {
+export const ClaimButton = ({ onPress,enabled }: ClaimButtonProps) => {
     const { scale, moderateScale } = useResponsive();
 
     // 🌟 1. Calculate dimensions on the JS thread so the UI thread doesn't crash!
@@ -54,9 +55,6 @@ export const ClaimButton = ({ onPress }: ClaimButtonProps) => {
         );
     }, []);
 
-    const animatedContainerStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: breathingScale.value * pressScale.value }],
-    }));
 
     const animatedShineStyle = useAnimatedStyle(() => ({
         // 🌟 2. Use the pre-calculated constant here!
@@ -72,37 +70,63 @@ export const ClaimButton = ({ onPress }: ClaimButtonProps) => {
         onPress();
     };
 
+    const buttonColors = enabled
+        ? ['#FFDF00', '#D4AF37', '#B8860B', '#996515'] // Gold
+        : ['#D3D3D3', '#A9A9A9', '#808080', '#696969']; // Flat Gray
+
+    const borderColor = enabled ? '#FFE55C' : '#A9A9A9';
+    const textColor = enabled ? '#1A1A1A' : '#555555';
+
+    // 🌟 2. Stop the breathing scale if disabled
+    const animatedContainerStyle = useAnimatedStyle(() => ({
+        transform: enabled
+            ? [{ scale: breathingScale.value * pressScale.value }]
+            : [{ scale: 1 }], // Static when disabled
+    }));
+
     return (
         <Animated.View style={[animatedContainerStyle, { zIndex: 1000 }]}>
             <Pressable
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
                 style={styles.pressable}
+                disabled={!enabled}
             >
                 <LinearGradient
-                    colors={['#FFDF00', '#D4AF37', '#B8860B', '#996515']}
+                    colors={buttonColors}
                     locations={[0, 0.4, 0.8, 1]}
                     style={[
                         styles.gradientBackground,
-                        { borderRadius: BUTTON_RADIUS, paddingVertical: PADDING_V, paddingHorizontal: PADDING_H }
+                        {
+                            borderRadius: BUTTON_RADIUS,
+                            paddingVertical: PADDING_V,
+                            paddingHorizontal: PADDING_H,
+                            borderColor: borderColor // 🌟 Apply dynamic border
+                        }
                     ]}
                 >
-                    <AppText style={[styles.text, { fontSize: FONT_SIZE }]}>
+                    <AppText style={[styles.text, { fontSize: FONT_SIZE, color: textColor }]}>
                         CLAIM
                     </AppText>
 
-                    <Animated.View style={[styles.shineContainer, animatedShineStyle]}>
-                        <LinearGradient
-                            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)', 'rgba(255,255,255,0)']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.shineElement}
-                        />
-                    </Animated.View>
+                    {/* 🌟 3. Only render the shine sweep if it is active */}
+                    {enabled && (
+                        <Animated.View style={[styles.shineContainer, animatedShineStyle]}>
+                            <LinearGradient
+                                colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)', 'rgba(255,255,255,0)']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.shineElement}
+                            />
+                        </Animated.View>
+                    )}
 
                 </LinearGradient>
 
-                <View style={[StyleSheet.absoluteFillObject, styles.glowOverlay, { borderRadius: BUTTON_RADIUS }]} />
+                {/* 🌟 4. Only render the glowing shadow if it is active */}
+                {enabled && (
+                    <View style={[StyleSheet.absoluteFillObject, styles.glowOverlay, { borderRadius: BUTTON_RADIUS }]} />
+                )}
             </Pressable>
         </Animated.View>
     );
