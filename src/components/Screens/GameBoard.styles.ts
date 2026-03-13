@@ -22,6 +22,23 @@ export const createStyles = (
     isLandscape: boolean,
 ) =>
     StyleSheet.create({
+        dot: {
+            position: 'absolute',
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        label: {
+            fontSize: 8,
+            color: 'white',
+            position: 'absolute',
+            top: 10,
+            fontWeight: 'bold',
+            backgroundColor: 'black',
+            paddingHorizontal: 2,
+        },
         board: {
             flex: 1,
             backgroundColor: theme.background,
@@ -197,6 +214,7 @@ export const createStyles = (
             position: "absolute",
             bottom: "5%",
             width: "100%",
+            // minWidth: "25%",
             alignItems: "center",
             // 🌟 In Landscape, we limit the height so it doesn't push the table off-screen
             height: isLandscape ? scale(100) : scale(100),
@@ -285,7 +303,7 @@ export const createStyles = (
             // 🌟 3. Add a gap so the avatar and hand value don't touch the cards
             gap: scale(16),
 
-            minWidth: "25%",
+
             borderRadius: 25,
             height: scale(60),
             paddingHorizontal: scale(10),
@@ -309,7 +327,7 @@ export const createStyles = (
 
             // 🌟 6. Ensure the container itself doesn't clip the cards
             overflow: "visible",
-
+            minWidth: "30%",
             // Optional: If you want the cards to float slightly *above* the red bar,
             // add a negative bottom margin to push them up:
             marginBottom: scale(20),

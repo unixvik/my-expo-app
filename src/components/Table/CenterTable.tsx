@@ -1,5 +1,5 @@
 import { TouchableOpacity, View } from "react-native";
-import { useMemo } from "react";
+import {useEffect, useMemo} from "react";
 import { createStyles } from "@/components/Screens/GameBoard.styles";
 import { useTheme } from "@/hooks/useTheme";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -9,6 +9,9 @@ import { BASE_CARD_WIDTH } from "@/state/constants";
 import { convertServerCardToUICard } from "@/utils/suitHelper";
 import { useAwaitingDraw } from "@/state/gameSelectors";
 import { AppText } from "@/Common/AppText";
+import {measure, useAnimatedRef} from "react-native-reanimated";
+import {runOnJS, runOnUI} from "react-native-worklets";
+import {DebugTrajectory} from "@/components/Dev/DebugTrajectory";
 
 export function CenterTable(props: any) {
     const theme = useTheme();
@@ -24,6 +27,28 @@ export function CenterTable(props: any) {
     const drawCards = useGameStore((s) => s.drawCards);
     const cardsRemaining = useGameStore((s) => s.server.cardsRemaining);
 
+    const discardRef = useAnimatedRef<View>();
+    const setDiscardLayout = useGameStore((s) => s.setDiscardLayout);
+
+    const handleLayout = () => {
+        runOnUI(() => {
+            'worklet';
+            const measurement = measure(discardRef);
+            if (measurement) {
+                runOnJS(setDiscardLayout)({
+                    // 🌟 SCHIMBARE: Folosim coordonatele de PAGINĂ (globale)
+                    x: measurement.pageX,
+                    y: measurement.pageY,
+                    width: measurement.width,
+                    height: measurement.height
+                });
+            }
+        })();
+    };
+
+
+    const discardLayout = useGameStore(s => s.discardLayout);
+    // console.log(discardLayout);
     return (
         <View style={styles.centerTable}>
 
@@ -54,6 +79,8 @@ export function CenterTable(props: any) {
 
             {/* DISCARD PILE */}
             <TouchableOpacity
+                ref={discardRef}
+                onLayout={handleLayout}
                 style={[styles.cardSlot, styles.discardSlot]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(true)}
@@ -69,6 +96,27 @@ export function CenterTable(props: any) {
                     <AppText variant="secondary">Empty</AppText>
                 )}
             </TouchableOpacity>
+            {/* 🔴 ANCHOR DEBUGGER: Apare doar dacă avem date în store */}
+            {discardLayout && (
+                <View
+                    pointerEvents="none" // Să nu blocheze click-urile
+                    style={{
+                        position: 'absolute',
+                        left: discardLayout.x,
+                        top: discardLayout.y,
+                        width: discardLayout.width,
+                        height: discardLayout.height,
+                        borderWidth: 2,
+                        borderColor: 'red', // Culoare stridentă pentru debug
+                        backgroundColor: 'rgba(255, 0, 0, 0.2)', // Fundal semi-transparent
+                        zIndex: 9999,
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                    }}
+                >
+                    {/*<Text>DISCARD ANCHOR</Text>*/}
+                </View>
+            )}
 
         </View>
     );

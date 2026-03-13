@@ -53,10 +53,8 @@ export function PlayerLayer() {
     // 🌟 ANIMATION CONFIG: Shared spring physics for a unified feel
     const springConfig = LinearTransition.springify().damping(16).stiffness(160);
 
-    // 🌟 Read from the visual reality, not the server truth
-    const visualHand = useVisualStore((s) => s.visualHand);
-
-
+    // Read the layouts for the animations
+    const discardLayout = useGameStore((s) => s.discardLayout);
 
     return (
         <View style={styles.playerZone} pointerEvents="box-none">
@@ -99,22 +97,20 @@ export function PlayerLayer() {
                 </View>
 
                 {/* 🌟 2. HAND CONTAINER ANIMATION */}
-                <View style={[styles.handContainer, { width: 0, justifyContent: 'center', alignItems: 'flex-end' }]}>
-                    {/*{me?.hand?.map((rawCard, index) => {*/}
-                    {visualHand.map((card, index) => {
-                        // const card = convertServerCardToUICard(rawCard);
-                        // const isSelected = selectedDiscardIds.some(c => c === card.id);
+                <View style={[styles.handContainer, {minWidth:100, justifyContent: 'center', alignItems: 'flex-end' }]}>
+                    {me?.hand?.map((rawCard, index) => {
+                        const card = convertServerCardToUICard(rawCard);
                         const isSelected = selectedDiscardIds.some(c => c === card.id);
                         return (
                             <AnimatedHandCard
                                 key={card.id}
                                 card={card}
                                 index={index}
-                                // totalCards={me.hand.length}
-                                totalCards={visualHand.length}
+                                totalCards={me.hand.length}
                                 cardWidth={PLAYER_CARD_WIDTH}
                                 isSelected={isSelected}
                                 onToggleSelect={toggleCardSelection}
+                                discardTarget={discardLayout} // read the discardTarget target
                             />
                         );
                     })}

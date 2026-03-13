@@ -34,7 +34,7 @@ export const LobbyScreen = () => {
     // AUTO ADD BOTS AND PLAY IN ORDER TO TEST
     // ========================================
 
-    const BOTS_TO_ADD = 5;
+    const BOTS_TO_ADD = 1;
     const hasInitializedBots = useRef(false);
 
     useEffect(() => {

@@ -6,7 +6,8 @@ import {useResponsive} from "@/hooks/useResponsive";
 import {CenterTable} from "@/components/Table/CenterTable";
 import {OpponentsLayer} from "@/components/Layers/OpponentsLayer";
 import {PlayerLayer} from "@/components/Layers/PlayerLayer";
-import { View } from "react-native";
+import {View} from "react-native";
+import {DebugTrajectory} from "@/components/Dev/DebugTrajectory";
 
 export const GameBoard = () => {
     const theme = useTheme();
@@ -20,12 +21,13 @@ export const GameBoard = () => {
         [theme, scale]
     );
 
-   return (
+    return (
         <View style={styles.board}>
+            <DebugTrajectory/>
             {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
             <View style={styles.tableContainer}>
                 {/* 1. THE 3D ENVIRONMENT */}
-                <View style={[styles.table3D, isLandscape && {flex: 1 }]}>
+                <View style={[styles.table3D, isLandscape && {flex: 1}]}>
                     <View style={styles.tableArea}>
                         {/*TABLE Surface*/}
                         <TableSurface/>

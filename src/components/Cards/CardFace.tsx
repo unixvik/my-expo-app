@@ -31,7 +31,7 @@ export const CardFace = React.memo(({
             createStyles(theme, scale, moderateScale, isLandscape, cardWidth),
         [theme, scale, cardWidth]
     );
-    if (!card) return <View style={[styles.cardBase, style]} />;
+    if (!card) return <View style={[styles.cardBase, style]} />
 
     const isRed = ['hearts', 'diamonds', 'H', 'D', '♥', '♦'].includes(card.suit.toLowerCase());
     const ink = isRed ? theme.cards.suitRed : theme.cards.suitBlack;

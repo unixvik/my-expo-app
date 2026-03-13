@@ -14,6 +14,7 @@ interface GameCardProps {
 }
 
 export const GameCard = ({ card, isFacedown=false,isSelected, style,}: GameCardProps) => {
+    // @ts-ignore
     return (
         // 🌟 The inner container shapes the actual artwork
         <View style={style}>
@@ -21,7 +22,7 @@ export const GameCard = ({ card, isFacedown=false,isSelected, style,}: GameCardP
             {!isFacedown ? ( <CardFace card={card} /> ) :
                 (
                 <CardBack />
-                )};
+                )}
 
         </View>
     );

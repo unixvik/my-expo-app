@@ -1,16 +1,19 @@
-import React, {useEffect, useMemo} from 'react';
-import {StyleSheet, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet, Pressable } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
-    withTiming
+    LinearTransition,
+    FadeIn, useAnimatedRef, measure // Adăugat pentru o intrare fluidă
 } from 'react-native-reanimated';
 import { GameCard } from './GameCard';
-import { calculateCardFan } from '@/utils/animations';
-import {useTheme} from "@/hooks/useTheme";
-import {useResponsive} from "@/hooks/useResponsive";
-import {createStyles} from "@/components/Screens/GameBoard.styles";
+import { calculateCardFan, createDiscardAnimation } from '@/utils/animations';
+import { useTheme } from "@/hooks/useTheme";
+import { useResponsive } from "@/hooks/useResponsive";
+import { createStyles } from "@/components/Screens/GameBoard.styles";
+import {useGameStore} from "@/state/useGameStore";
+import {runOnJS} from "react-native-worklets";
 
 interface AnimatedHandCardProps {
     card: any;
@@ -19,27 +22,21 @@ interface AnimatedHandCardProps {
     cardWidth: number;
     isSelected: boolean;
     onToggleSelect: (id: string) => void;
+    discardTarget: { x: number; y: number; width: number; height: number } | null;
 }
 
 export const AnimatedHandCard = ({
-                                     card, index, totalCards, cardWidth, isSelected, onToggleSelect
+                                     card, discardTarget, index, totalCards, cardWidth, isSelected, onToggleSelect
                                  }: AnimatedHandCardProps) => {
 
     const theme = useTheme();
     const { scale, moderateScale, isLandscape } = useResponsive();
     const styles = useMemo(() => createStyles(theme, scale, moderateScale, isLandscape), [theme, scale, isLandscape]);
 
-
-
-    // Local Interaction State
     const isHovered = useSharedValue(false);
-
-    // Spring physics for that premium cinematic feel
     const springConfig = { damping: 14, stiffness: 150, mass: 0.8 };
 
-    // The core style engine
     const animatedStyle = useAnimatedStyle(() => {
-        // Run the math on the UI thread for 60fps performance
         const target = calculateCardFan(index, totalCards, cardWidth, isSelected, isHovered.value);
 
         return {
@@ -49,23 +46,43 @@ export const AnimatedHandCard = ({
                 { rotateZ: withSpring(target.rotateZ, springConfig) },
                 { scale: withSpring(isHovered.value && !isSelected ? 1.05 : 1, springConfig) }
             ],
-            // Dynamically elevate the Z-index so hovered/selected cards pop over their neighbors
-            zIndex: isSelected || isHovered.value ? 100 : index,
+            zIndex: isSelected || isHovered.value ? 10 : index,
         };
-    }, [index, totalCards, cardWidth, isSelected]); // Re-run if hand changes
+    }, [index, totalCards, cardWidth, isSelected]);
+
+    const animatedRef = useAnimatedRef<Animated.View>();
+    const setHandPosition = useGameStore(s => s.setHandPosition);
+
+    const updatePos = () => {
+        'worklet';
+        const m = measure(animatedRef);
+        if (m) {
+            runOnJS(setHandPosition)(card.id, {
+                x: m.pageX + m.width / 2, // Centrul global X
+                y: m.pageY + m.height / 2  // Centrul global Y
+            });
+        }
+    };
+
+
+
 
     return (
-        <Animated.View style={[styles.playerCardWrapper, animatedStyle, { position: 'absolute' }]}>
+        <Animated.View
+            layout={LinearTransition.springify().damping(15)}
+            entering={FadeIn.duration(300)}
+            // exiting={discardAnimation}
+            style={[styles.playerCardWrapper, animatedStyle, { position: 'absolute',zIndex: 1000 }]}
+        >
             <Pressable
                 onPress={() => onToggleSelect(card.id)}
                 onPressIn={() => { isHovered.value = true; }}
                 onPressOut={() => { isHovered.value = false; }}
-                style={StyleSheet.absoluteFill} // Make the touch area fill the Physics Box
+                style={StyleSheet.absoluteFill}
             >
                 <GameCard
                     card={card}
                     isSelected={isSelected}
-                    // Pass the canvas style down to the actual visual component
                     style={styles.playerCardArtwork}
                 />
             </Pressable>
