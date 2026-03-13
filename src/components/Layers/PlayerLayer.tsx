@@ -1,5 +1,7 @@
+// src/components/Layers/PlayerLayer.tsx
+
 import React, { useMemo } from "react";
-import { StyleSheet, TouchableOpacity, View, Platform } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import Animated, {
     LinearTransition,
     FadeInDown,
@@ -21,6 +23,7 @@ import { PLAYER_CARD_WIDTH } from "@/state/constants";
 import { ClaimButton } from "@/components/UI/ClaimButton";
 import {AnimatedHandCard} from "@/components/Cards/AnimatedHandCard";
 import {useVisualStore} from "@/state/useVisualStore";
+import {spawnDiscardFlight} from "@/utils/spawnDiscardFlight";
 
 export function PlayerLayer() {
     const theme = useTheme();
@@ -70,24 +73,7 @@ export function PlayerLayer() {
                 >
                     <TouchableOpacity
                         onPress={() => {
-                            if (Platform.OS === 'web' && discardLayout) {
-                                const endX = discardLayout.x + discardLayout.width / 2;
-                                const endY = discardLayout.y + discardLayout.height / 2;
-                                selectedDiscardIds.forEach(cardId => {
-                                    const pos = handPositions[cardId];
-                                    const rawCard = me?.hand.find(c => c.id === cardId);
-                                    if (pos && rawCard) {
-                                        spawnFlyingCard({
-                                            id: `${cardId}_fly`,
-                                            card: convertServerCardToUICard(rawCard),
-                                            startX: pos.x,
-                                            startY: pos.y,
-                                            endX,
-                                            endY,
-                                        });
-                                    }
-                                });
-                            }
+                            if (discardLayout) { spawnDiscardFlight({selectedDiscardIds, hand: me?.hand ?? [],handPositions,discardLayout,spawnFlyingCard});}
                             discardCards(selectedDiscardIds);
                             clearSelection();
                         }}

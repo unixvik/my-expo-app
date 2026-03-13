@@ -46,5 +46,7 @@ export const useVisualStore = create<VisualStore>()(
         removeFlyingCard: (id) => set((state) => {
             state.flyingCards = state.flyingCards.filter(c => c.id !== id);
         }),
+
+
     }))
 );

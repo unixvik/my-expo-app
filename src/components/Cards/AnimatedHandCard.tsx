@@ -70,7 +70,7 @@ export const AnimatedHandCard = ({
             layout={LinearTransition.springify().damping(15)}
             entering={FadeIn.duration(300)}
             exiting={Platform.OS === 'web'
-                ? FadeOut.duration(300)
+                ? null
                 : createDiscardAnimation(discardTarget, handPositions[card.id] ?? null)}
             style={[styles.playerCardWrapper, animatedStyle, { position: 'absolute', zIndex: 1000 }]}
         >

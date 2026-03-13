@@ -90,7 +90,7 @@ export const createDiscardAnimation = (
                     easing: Easing.in(Easing.quad)
                 }),
                 scale: withTiming(0.6, { duration: 400 }),
-                opacity: withDelay(350, withTiming(0, { duration: 50 })),
+                // opacity: withDelay(350, withTiming(0, { duration: 50 })),
             },
         };
     };

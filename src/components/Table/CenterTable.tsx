@@ -18,10 +18,17 @@ export function CenterTable(props: any) {
     const { scale, moderateScale, isLandscape } = useResponsive();
     const styles = useMemo(() => createStyles(theme, scale, moderateScale, isLandscape), [theme, scale, isLandscape]);
 
+    // 🌟 1. Pull BOTH the server pile and the local snapshot
     const discardPile = useGameStore((s) => s.server.discardPile);
-    const topDiscardRaw = discardPile.length > 0 ? discardPile[discardPile.length - 1] : null;
-    const topDiscard = topDiscardRaw ? convertServerCardToUICard(topDiscardRaw) : null;
+    const heldTopDiscard = useGameStore((s) => s.local.heldTopDiscard);
+console.log(heldTopDiscard);
+// 🌟 2. The Fallback Logic: Prefer the snapshot if it exists
+    const topDiscardRaw = heldTopDiscard
+        ? heldTopDiscard
+        : (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
 
+// 3. Convert to UI Card exactly as you did before
+    const topDiscard = topDiscardRaw ? convertServerCardToUICard(topDiscardRaw) : null;
     const atuCard = useGameStore((s) => s.server.atuCard);
     const mandatoryDraw = useAwaitingDraw();
     const drawCards = useGameStore((s) => s.drawCards);
@@ -37,7 +44,7 @@ export function CenterTable(props: any) {
             if (measurement) {
                 runOnJS(setDiscardLayout)({
                     // 🌟 SCHIMBARE: Folosim coordonatele de PAGINĂ (globale)
-                    x: measurement.pageX,
+                    x: measurement.pageX+40,
                     y: measurement.pageY,
                     width: measurement.width,
                     height: measurement.height
@@ -46,6 +53,23 @@ export function CenterTable(props: any) {
         })();
     };
 
+    useEffect(() => {
+
+            runOnUI(() => {
+                'worklet';
+                const measurement = measure(discardRef);
+                if (measurement) {
+                    runOnJS(setDiscardLayout)({
+                        // 🌟 SCHIMBARE: Folosim coordonatele de PAGINĂ (globale)
+                        x: measurement.pageX+140,
+                        y: measurement.pageY,
+                        width: measurement.width,
+                        height: measurement.height
+                    });
+                }
+            })();
+console.log("test")
+    }, []);
 
     const discardLayout = useGameStore(s => s.discardLayout);
     // console.log(discardLayout);

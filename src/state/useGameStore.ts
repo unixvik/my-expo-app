@@ -32,6 +32,9 @@ export interface GameStore {
         themeId: GameTheme['id'];
         selectedCardId: string | null;
         isMyTurn: boolean;
+
+        // The snapshots
+        heldTopDiscard: any | null;
     };
 
     // --- ACTIONS ---
@@ -103,6 +106,8 @@ export const useGameStore = create<GameStore>()(
                 isMyTurn: false,
                 selectedDiscardIds: [],
                 isClaimOpen: false,
+
+                heldTopDiscard: null,
             },
             debugPath: null,
             discardLayout: null,
@@ -157,11 +162,35 @@ export const useGameStore = create<GameStore>()(
             }),
 
             discardCards: (cards) => set((state) => {
+                // Take snapshot
+                const pile = state.server.discardPile;
+                state.local.heldTopDiscard = pile.length > 0 ? pile[pile.length - 1] : null;
+
+                // Send Colyseus message
                 globalRoom?.send("discardCards", {cardIds: cards})
             }),
-            drawCards: (fromDiscard) => set((state) => {
-                globalRoom?.send("drawCard", {fromDiscard: fromDiscard})
-            }),
+
+
+            drawCards: (fromDiscard) => {
+                // 1. Execute side effects outside of the state mutator
+                console.log("DrawCard sending");
+                globalRoom?.send("drawCard", { fromDiscard: fromDiscard });
+                console.log("DrawCard sent!");
+
+                // 2. Call set exactly ONCE to mutate the Immer draft
+                set((state) => {
+                    console.log("top card discarded - should see the server one");
+                    state.local.heldTopDiscard = null;
+                });
+            },
+
+            releaseHeldDiscard: () => {
+                set((state) => {
+                    // 🌟 3. Destroy the snapshot, forcing the UI to read the true Server State again
+                    state.local.heldTopDiscard = null;
+                });
+            },
+
             claimGame: () => set((state) => {
                 globalRoom?.send("shoutClaim")
             }),
