@@ -1,19 +1,20 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Pressable } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { StyleSheet, Pressable, View, Platform } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
     LinearTransition,
-    FadeIn, useAnimatedRef, measure // Adăugat pentru o intrare fluidă
+    FadeIn,
+    FadeOut,
+    useAnimatedRef,
 } from 'react-native-reanimated';
 import { GameCard } from './GameCard';
-import { calculateCardFan, createDiscardAnimation } from '@/utils/animations';
+import {calculateCardFan, createDiscardAnimation} from '@/utils/animations';
 import { useTheme } from "@/hooks/useTheme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { createStyles } from "@/components/Screens/GameBoard.styles";
 import {useGameStore} from "@/state/useGameStore";
-import {runOnJS} from "react-native-worklets";
 
 interface AnimatedHandCardProps {
     card: any;
@@ -51,31 +52,35 @@ export const AnimatedHandCard = ({
     }, [index, totalCards, cardWidth, isSelected]);
 
     const animatedRef = useAnimatedRef<Animated.View>();
+    // Plain ref on a child view — works reliably on both native and web
+    // (animatedRef.current doesn't expose measureInWindow on web)
+    const measureRef = useRef<View>(null);
     const setHandPosition = useGameStore(s => s.setHandPosition);
+    const handPositions = useGameStore(s => s.handPositions);
 
     const updatePos = () => {
-        'worklet';
-        const m = measure(animatedRef);
-        if (m) {
-            runOnJS(setHandPosition)(card.id, {
-                x: m.pageX + m.width / 2, // Centrul global X
-                y: m.pageY + m.height / 2  // Centrul global Y
-            });
-        }
+        measureRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+            setHandPosition(card.id, { x: x + w / 2, y: y + h / 2 });
+        });
     };
-
-
-
 
     return (
         <Animated.View
+            ref={animatedRef}
             layout={LinearTransition.springify().damping(15)}
             entering={FadeIn.duration(300)}
-            // exiting={discardAnimation}
-            style={[styles.playerCardWrapper, animatedStyle, { position: 'absolute',zIndex: 1000 }]}
+            exiting={Platform.OS === 'web'
+                ? FadeOut.duration(300)
+                : createDiscardAnimation(discardTarget, handPositions[card.id] ?? null)}
+            style={[styles.playerCardWrapper, animatedStyle, { position: 'absolute', zIndex: 1000 }]}
         >
+            {/* Transparent overlay used only for cross-platform measureInWindow */}
+            <View ref={measureRef} style={StyleSheet.absoluteFill} pointerEvents="none" />
             <Pressable
-                onPress={() => onToggleSelect(card.id)}
+                onPress={() => {
+                    updatePos();
+                    onToggleSelect(card.id);
+                }}
                 onPressIn={() => { isHovered.value = true; }}
                 onPressOut={() => { isHovered.value = false; }}
                 style={StyleSheet.absoluteFill}

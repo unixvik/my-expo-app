@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View, Platform } from "react-native";
 import Animated, {
     LinearTransition,
     FadeInDown,
@@ -55,6 +55,8 @@ export function PlayerLayer() {
 
     // Read the layouts for the animations
     const discardLayout = useGameStore((s) => s.discardLayout);
+    const handPositions = useGameStore((s) => s.handPositions);
+    const spawnFlyingCard = useVisualStore((s) => s.spawnFlyingCard);
 
     return (
         <View style={styles.playerZone} pointerEvents="box-none">
@@ -68,6 +70,24 @@ export function PlayerLayer() {
                 >
                     <TouchableOpacity
                         onPress={() => {
+                            if (Platform.OS === 'web' && discardLayout) {
+                                const endX = discardLayout.x + discardLayout.width / 2;
+                                const endY = discardLayout.y + discardLayout.height / 2;
+                                selectedDiscardIds.forEach(cardId => {
+                                    const pos = handPositions[cardId];
+                                    const rawCard = me?.hand.find(c => c.id === cardId);
+                                    if (pos && rawCard) {
+                                        spawnFlyingCard({
+                                            id: `${cardId}_fly`,
+                                            card: convertServerCardToUICard(rawCard),
+                                            startX: pos.x,
+                                            startY: pos.y,
+                                            endX,
+                                            endY,
+                                        });
+                                    }
+                                });
+                            }
                             discardCards(selectedDiscardIds);
                             clearSelection();
                         }}

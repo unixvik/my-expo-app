@@ -8,6 +8,7 @@ import {OpponentsLayer} from "@/components/Layers/OpponentsLayer";
 import {PlayerLayer} from "@/components/Layers/PlayerLayer";
 import {View} from "react-native";
 import {DebugTrajectory} from "@/components/Dev/DebugTrajectory";
+import {FlightOverlay} from "@/components/Dev/FlightOverlay";
 
 export const GameBoard = () => {
     const theme = useTheme();
@@ -24,6 +25,7 @@ export const GameBoard = () => {
     return (
         <View style={styles.board}>
             <DebugTrajectory/>
+            <FlightOverlay/>
             {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
             <View style={styles.tableContainer}>
                 {/* 1. THE 3D ENVIRONMENT */}

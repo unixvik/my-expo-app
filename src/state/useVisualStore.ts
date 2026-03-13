@@ -7,7 +7,7 @@ interface VisualStore {
     visualHand: CardData[];
 
     // Ghost cards are temporary clones used strictly for flying animations
-    flyingCards: { id: string; card: CardData; startX: number; startY: number; target: string }[];
+    flyingCards: { id: string; card: CardData; startX: number; startY: number; endX: number; endY: number }[];
 
     // --- Actions ---
     syncInitialHand: (serverHand: CardData[]) => void;

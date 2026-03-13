@@ -11,7 +11,7 @@ export const DebugTrajectory = () => {
     const me = useSelf();
 
     if (!discard || !me) return null;
-console.log(discard);
+// console.log(discard);
     // Centrul absolut al pachetului
     const toX = discard.x + (discard.width / 2);
     const toY = discard.y + (discard.height / 2);

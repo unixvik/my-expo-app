@@ -1,13 +1,9 @@
 import {
-    EntryExitAnimationFunction,
-    withSpring,
     withTiming,
-    FadeOutDown, // Fallback pentru Web
-    ComplexAnimationBuilder, FadeOut
+    withDelay,
+    Easing
 } from "react-native-reanimated";
-import { Platform } from 'react-native';
-import {runOnJS} from "react-native-worklets";
-import {useGameStore} from "@/state/useGameStore";
+import {Platform} from 'react-native';
 
 
 const IS_WEB = Platform.OS === 'web';
@@ -23,7 +19,6 @@ export const calculateCardFan = (
     'worklet';
     const middleIndex = (totalCards - 1) / 2;
     const relativeIndex = index - middleIndex;
-
 
 
     const FAN_ANGLE = 25;
@@ -47,68 +42,56 @@ export const calculateCardFan = (
     };
 };
 
-const updateDebugPath = (path: any) => {
-    useGameStore.getState().setDebugPath(path);
-};
 
-// 🌟 LOGICA DE DISCARD ADAPTATĂ
-export const createDiscardAnimation = (discardTarget: any): any => {
-    if (IS_WEB) return FadeOutDown.duration(400);
-
-    const animation: EntryExitAnimationFunction = (values) => {
+export const createDiscardAnimation = (
+    discardLayout: { x: number, y: number, width: number, height: number } | null,
+    fromPos: { x: number, y: number } | null
+) => {
+    return (values: any) => {
         'worklet';
-        if (!discardTarget) {
-            return {
-                animations: { opacity: withTiming(0) },
-                initialValues: { opacity: 1 },
-            };
+
+        // fromPos is measured via measure() at press time and includes all fan transforms.
+        // values.currentGlobalOriginX does NOT include translateX/translateY from animatedStyle,
+        // causing wrong deltaX for cards at the edges of the fan.
+        const cardGlobalCenterX = fromPos
+            ? fromPos.x
+            : values.currentGlobalOriginX + (values.currentWidth / 2);
+        const cardGlobalCenterY = fromPos
+            ? fromPos.y
+            : values.currentGlobalOriginY + (values.currentHeight / 2);
+
+        let targetX = cardGlobalCenterX;
+        let targetY = cardGlobalCenterY - 300;
+
+        if (discardLayout) {
+            targetX = discardLayout.x + (discardLayout.width / 2);
+            targetY = discardLayout.y + (discardLayout.height / 2);
         }
 
-        const startX = (values.currentGlobalOriginX || values.targetGlobalOriginX) + values.currentWidth / 2;
-        const startY = (values.currentGlobalOriginY || values.targetGlobalOriginY) + values.currentHeight / 2;
-
-        const toX = discardTarget.x + discardTarget.width / 2;
-        const toY = discardTarget.y + discardTarget.height / 2;
-
-        console.log(startX,startY);
-        // Trimitem la debug
-        runOnJS(updateDebugPath)({
-            from: { x: startX, y: startY },
-            to: { x: toX, y: toY }
-        });
-
-        const deltaX = toX - startX;
-        const deltaY = toY - startY;
+        const deltaX = targetX - cardGlobalCenterX;
+        const deltaY = targetY - cardGlobalCenterY;
 
         return {
-            animations: {
-                transform: [
-                    { translateX: withSpring(deltaX, { damping: 20, stiffness: 90 }) },
-                    { translateY: withSpring(deltaY, { damping: 20, stiffness: 90 }) },
-                    { scale: withSpring(0.4) },
-                    { rotateZ: withSpring('15deg') },
-                    { rotateX: withSpring('45deg') }
-                ],
-                opacity: withTiming(0, { duration: 400 }),
-            },
             initialValues: {
-                transform: [
-                    { translateX: 0 }, { translateY: 0 }, { scale: 1 }, { rotateZ: '0deg' }, { rotateX: '0deg' }
-                ],
+                originX: values.currentOriginX,
+                originY: values.currentOriginY,
+                rotateZ: '0deg',
+                scale: 1,
                 opacity: 1,
+                zIndex: 9999,
+            },
+            animations: {
+                originX: withTiming(values.currentOriginX + deltaX, {
+                    duration: 400,
+                    easing: Easing.out(Easing.quad)
+                }),
+                originY: withTiming(values.currentOriginY + deltaY, {
+                    duration: 400,
+                    easing: Easing.in(Easing.quad)
+                }),
+                scale: withTiming(0.6, { duration: 400 }),
+                opacity: withDelay(350, withTiming(0, { duration: 50 })),
             },
         };
     };
-
-    return animation;
-};
-
-export const getSmartExitAnimation = (discardTarget: any) => {
-    if (Platform.OS === 'web') {
-        // Pe Web returnăm un FadeOut simplu, Reanimated îl suportă nativ fără erori
-        return FadeOut.duration(300);
-    }
-
-    // Pe Mobile folosim funcția ta custom de zbor (createDiscardAnimation)
-    return createDiscardAnimation(discardTarget);
 };
