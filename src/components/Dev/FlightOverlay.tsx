@@ -1,77 +1,98 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Modal } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, StyleSheet, Modal} from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    withDelay,
     Easing,
-    runOnJS,
 } from 'react-native-reanimated';
-import { useVisualStore } from '@/state/useVisualStore';
-import { GameCard } from '@/components/Cards/GameCard';
-import { PLAYER_CARD_WIDTH, CARD_ASPECT_RATIO, TABLE_TILT, TABLE_PERSPECTIVE } from '@/state/constants';
-import { useResponsive } from '@/hooks/useResponsive';
+import {useVisualStore} from '@/state/useVisualStore';
+import {useGameStore} from '@/state/useGameStore';
+import {GameCard} from '@/components/Cards/GameCard';
+import {
+    PLAYER_CARD_WIDTH,
+    BASE_CARD_WIDTH,
+    CARD_ASPECT_RATIO,
+    TABLE_PERSPECTIVE,
+    TABLE_TILT,
+    DISCARD_OFFSET
+} from '@/state/constants';
+import {useResponsive} from '@/hooks/useResponsive';
+import {runOnJS} from "react-native-worklets";
+
+type Phase = 'flying' | 'staged' | 'resting';
 
 const FlyingCardItem = ({
                             ghost,
                             cardWidth,
                             cardHeight,
+                            isMyTurn,
                             onDone,
                         }: {
     ghost: { id: string; card: any; startX: number; startY: number; endX: number; endY: number };
     cardWidth: number;
     cardHeight: number;
+    isMyTurn: boolean;
     onDone: () => void;
 }) => {
-    // 🌟 1. Use Translation instead of absolute left/top for 60fps performance
+    const { scale } = useResponsive();
+
+    // Landing calculations
+    const exactLandingX = ghost.endX - cardWidth / 2 + DISCARD_OFFSET.x;
+    const exactLandingY = ghost.endY - cardHeight / 2 + DISCARD_OFFSET.y;
+    const initialScale = scale(PLAYER_CARD_WIDTH / BASE_CARD_WIDTH);
+
+    // Shared Values
     const translateX = useSharedValue(ghost.startX - cardWidth / 2);
     const translateY = useSharedValue(ghost.startY - cardHeight / 2);
-    const scaleAnim = useSharedValue(1);
-    const opacity = useSharedValue(1);
+    const rotateZ = useSharedValue(0);
+    const scaleAnim = useSharedValue(initialScale);
 
-    // 🌟 2. Add the 3D Rotation shared value (starts flat at 0 degrees)
-    const rotateXAnim = useSharedValue(0);
+    const FLY_DURATION = 500;
 
     useEffect(() => {
-        // Flight path
-        translateX.value = withTiming(ghost.endX - cardWidth / 2, { duration: 400, easing: Easing.out(Easing.quad) });
-        translateY.value = withTiming(ghost.endY - cardHeight / 2, { duration: 400, easing: Easing.in(Easing.quad) });
+        // Horizontal travel
+        translateX.value = withTiming(exactLandingX, {
+            duration: FLY_DURATION,
+            easing: Easing.out(Easing.quad),
+        });
 
-        // Target scale (shrink it slightly if your table cards are smaller than hand cards)
-        scaleAnim.value = withTiming(0.8, { duration: 400 });
+        // Vertical travel (using In-Out or specialized easing for a "toss" feel)
+        translateY.value = withTiming(exactLandingY, {
+            duration: FLY_DURATION,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        }, (finished) => {
+            if (finished) {
+                // Use runOnJS because onDone likely updates Zustand state
+                runOnJS(onDone)();
+            }
+        });
 
-        // 🌟 3. Tilt the card backward as it flies
-        rotateXAnim.value = withTiming(TABLE_TILT, { duration: 400, easing: Easing.inOut(Easing.quad) });
+        rotateZ.value = withTiming(DISCARD_OFFSET.rotateZ, {
+            duration: FLY_DURATION
+        });
 
-        // Fade out right as it lands (animating to 0, not 1)
-        opacity.value = withDelay(350, withTiming(0, { duration: 50 }, (finished) => {
-            'worklet';
-            if (finished) runOnJS(onDone)();
-        }));
+        scaleAnim.value = withTiming(1.0, {
+            duration: FLY_DURATION
+        });
     }, []);
 
-    const style = useAnimatedStyle(() => ({
+    const animatedStyle = useAnimatedStyle(() => ({
         position: 'absolute',
-        top: 0,
-        left: 0,
         width: cardWidth,
         height: cardHeight,
-        zIndex: 999999,
-        opacity: opacity.value,
         transform: [
-            // 🌟 4. Transform order matters! Perspective MUST be first.
-            { perspective: TABLE_PERSPECTIVE },
+            { perspective: 1000 },
             { translateX: translateX.value },
             { translateY: translateY.value },
-            { rotateX: `${rotateXAnim.value}deg` },
-            { scale: scaleAnim.value }
+            { rotateZ: `${rotateZ.value}deg` },
+            { scale: scaleAnim.value },
         ],
     }));
 
     return (
-        <Animated.View style={style} pointerEvents="none">
-            <GameCard card={ghost.card} style={{ width: cardWidth, height: cardHeight }} />
+        <Animated.View style={animatedStyle} pointerEvents="none">
+            <GameCard card={ghost.card} style={{ width: '100%', height: '100%' }} />
         </Animated.View>
     );
 };
@@ -79,9 +100,10 @@ const FlyingCardItem = ({
 export const FlightOverlay = () => {
     const flyingCards = useVisualStore(s => s.flyingCards);
     const removeFlyingCard = useVisualStore(s => s.removeFlyingCard);
-    const { scale } = useResponsive();
+    const isMyTurn = useGameStore(s => s.local.isMyTurn);
 
-    const cardWidth = scale(PLAYER_CARD_WIDTH);
+    const {scale} = useResponsive();
+    const cardWidth = scale(BASE_CARD_WIDTH);
     const cardHeight = cardWidth * CARD_ASPECT_RATIO;
 
     if (flyingCards.length === 0) return null;
@@ -95,9 +117,9 @@ export const FlightOverlay = () => {
                         ghost={ghost}
                         cardWidth={cardWidth}
                         cardHeight={cardHeight}
-                        // Swap this back when you are done debugging the landing!
-                        // onDone={() => removeFlyingCard(ghost.id)}
-                        onDone={() => null}
+                        isMyTurn={isMyTurn}
+                        scaleMult={scale} // 🌟 Pass down the scaler function
+                        onDone={() => removeFlyingCard(ghost.id)}
                     />
                 ))}
             </View>

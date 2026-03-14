@@ -58,8 +58,10 @@ export function PlayerLayer() {
 
     // Read the layouts for the animations
     const discardLayout = useGameStore((s) => s.discardLayout);
+
     const handPositions = useGameStore((s) => s.handPositions);
     const spawnFlyingCard = useVisualStore((s) => s.spawnFlyingCard);
+
 
     return (
         <View style={styles.playerZone} pointerEvents="box-none">

@@ -70,7 +70,7 @@ export const createDiscardAnimation = (
 
         const deltaX = targetX - cardGlobalCenterX;
         const deltaY = targetY - cardGlobalCenterY;
-
+console.log("Discard animation");
         return {
             initialValues: {
                 originX: values.currentOriginX,
@@ -82,15 +82,15 @@ export const createDiscardAnimation = (
             },
             animations: {
                 originX: withTiming(values.currentOriginX + deltaX, {
-                    duration: 400,
+                    duration: 2400,
                     easing: Easing.out(Easing.quad)
                 }),
                 originY: withTiming(values.currentOriginY + deltaY, {
-                    duration: 400,
+                    duration: 2400,
                     easing: Easing.in(Easing.quad)
                 }),
-                scale: withTiming(0.6, { duration: 400 }),
-                // opacity: withDelay(350, withTiming(0, { duration: 50 })),
+                scale: withTiming(0.6, { duration: 2400 }),
+                opacity: withDelay(350, withTiming(0, { duration: 50 })),
             },
         };
     };

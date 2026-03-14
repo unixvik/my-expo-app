@@ -1,78 +1,64 @@
-import { TouchableOpacity, View } from "react-native";
-import {useEffect, useMemo} from "react";
-import { createStyles } from "@/components/Screens/GameBoard.styles";
-import { useTheme } from "@/hooks/useTheme";
-import { useResponsive } from "@/hooks/useResponsive";
-import { useGameStore } from "@/state/useGameStore";
-import { GameCard } from "@/components/Cards/GameCard";
-import { BASE_CARD_WIDTH } from "@/state/constants";
-import { convertServerCardToUICard } from "@/utils/suitHelper";
-import { useAwaitingDraw } from "@/state/gameSelectors";
-import { AppText } from "@/Common/AppText";
+import {TouchableOpacity, View} from "react-native";
+import {useMemo} from "react";
+import {createStyles} from "@/components/Screens/GameBoard.styles";
+import {useTheme} from "@/hooks/useTheme";
+import {useResponsive} from "@/hooks/useResponsive";
+import {useGameStore} from "@/state/useGameStore";
+import {GameCard} from "@/components/Cards/GameCard";
+import {BASE_CARD_WIDTH, DISCARD_OFFSET} from "@/state/constants";
+import {convertServerCardToUICard} from "@/utils/suitHelper";
+import {useAwaitingDraw} from "@/state/gameSelectors";
+import {AppText} from "@/Common/AppText";
 import {measure, useAnimatedRef} from "react-native-reanimated";
 import {runOnJS, runOnUI} from "react-native-worklets";
-import {DebugTrajectory} from "@/components/Dev/DebugTrajectory";
+import {useVisualStore} from "@/state/useVisualStore";
 
 export function CenterTable(props: any) {
     const theme = useTheme();
-    const { scale, moderateScale, isLandscape } = useResponsive();
+    const {scale, moderateScale, isLandscape} = useResponsive();
     const styles = useMemo(() => createStyles(theme, scale, moderateScale, isLandscape), [theme, scale, isLandscape]);
 
-    // 🌟 1. Pull BOTH the server pile and the local snapshot
+    // 1. Get the raw states
     const discardPile = useGameStore((s) => s.server.discardPile);
-    const heldTopDiscard = useGameStore((s) => s.local.heldTopDiscard);
-console.log(heldTopDiscard);
-// 🌟 2. The Fallback Logic: Prefer the snapshot if it exists
-    const topDiscardRaw = heldTopDiscard
-        ? heldTopDiscard
-        : (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
+    const heldTopDiscardRaw = useGameStore((s) => s.local.heldTopDiscard);
 
-// 3. Convert to UI Card exactly as you did before
-    const topDiscard = topDiscardRaw ? convertServerCardToUICard(topDiscardRaw) : null;
+// 🌟 2. MAIN SLOT (Underneath): Show the snapshot if it exists, otherwise show normal server top
+    const mainSlotRaw = heldTopDiscardRaw
+        ? heldTopDiscardRaw
+        : (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
+    const mainSlotCard = mainSlotRaw ? convertServerCardToUICard(mainSlotRaw) : null;
+
+// 🌟 3. OFFSET SLOT (Hovering): Show the newly thrown card ONLY if we are holding a snapshot
+    const offsetSlotRaw = (heldTopDiscardRaw && discardPile.length > 0)
+        ? discardPile[discardPile.length - 1]
+        : null;
+    const offsetSlotCard = offsetSlotRaw ? convertServerCardToUICard(offsetSlotRaw) : null;
+
     const atuCard = useGameStore((s) => s.server.atuCard);
     const mandatoryDraw = useAwaitingDraw();
     const drawCards = useGameStore((s) => s.drawCards);
     const cardsRemaining = useGameStore((s) => s.server.cardsRemaining);
 
+    // --- Layout Measurement Engine ---
     const discardRef = useAnimatedRef<View>();
     const setDiscardLayout = useGameStore((s) => s.setDiscardLayout);
+    const flyingCards    = useVisualStore(s => s.flyingCards);
+
+    const isFlying = useMemo(() => {
+        if (!offsetSlotRaw) return false;
+        return flyingCards.some(f => f.card.id === offsetSlotRaw.id);
+    }, [flyingCards, offsetSlotRaw?.id]);
 
     const handleLayout = () => {
         runOnUI(() => {
             'worklet';
-            const measurement = measure(discardRef);
-            if (measurement) {
-                runOnJS(setDiscardLayout)({
-                    // 🌟 SCHIMBARE: Folosim coordonatele de PAGINĂ (globale)
-                    x: measurement.pageX+40,
-                    y: measurement.pageY,
-                    width: measurement.width,
-                    height: measurement.height
-                });
+            const m = measure(discardRef);
+            if (m) {
+                runOnJS(setDiscardLayout)({ x: m.pageX, y: m.pageY, width: m.width, height: m.height });
             }
         })();
     };
 
-    useEffect(() => {
-
-            runOnUI(() => {
-                'worklet';
-                const measurement = measure(discardRef);
-                if (measurement) {
-                    runOnJS(setDiscardLayout)({
-                        // 🌟 SCHIMBARE: Folosim coordonatele de PAGINĂ (globale)
-                        x: measurement.pageX+140,
-                        y: measurement.pageY,
-                        width: measurement.width,
-                        height: measurement.height
-                    });
-                }
-            })();
-console.log("test")
-    }, []);
-
-    const discardLayout = useGameStore(s => s.discardLayout);
-    // console.log(discardLayout);
     return (
         <View style={styles.centerTable}>
 
@@ -82,14 +68,14 @@ console.log("test")
                     <GameCard
                         card={convertServerCardToUICard(atuCard[0])}
                         cardWidth={BASE_CARD_WIDTH}
-                        style={styles.tableCardArtwork} // 🌟 ADD THIS
+                        style={styles.tableCardArtwork}
                     />
                 </View>
             )}
 
             {/* DRAW PILE */}
             <TouchableOpacity
-                style={[styles.cardSlot, styles.cardSlotDraw]} // Ensure cardSlot base is applied
+                style={[styles.cardSlot, styles.cardSlotDraw]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(false)}
             >
@@ -97,51 +83,53 @@ console.log("test")
                 <GameCard
                     isFacedown
                     cardWidth={BASE_CARD_WIDTH}
-                    style={styles.tableCardArtwork} // 🌟 ADD THIS
+                    style={styles.tableCardArtwork}
                 />
             </TouchableOpacity>
 
             {/* DISCARD PILE */}
             <TouchableOpacity
                 ref={discardRef}
-                onLayout={handleLayout}
+                onLayout={handleLayout} // 🌟 Measure reliably when the UI renders
                 style={[styles.cardSlot, styles.discardSlot]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(true)}
             >
                 <AppText style={styles.slotLabel}>DISCARD</AppText>
-                {topDiscard ? (
+
+                {/* The actual clickable server card underneath */}
+                {mainSlotCard ? (
                     <GameCard
-                        card={topDiscard}
+                        card={mainSlotCard}
                         cardWidth={BASE_CARD_WIDTH}
-                        style={styles.tableCardArtwork} // 🌟 ADD THIS
+                        style={styles.tableCardArtwork}
                     />
                 ) : (
                     <AppText variant="secondary">Empty</AppText>
                 )}
-            </TouchableOpacity>
-            {/* 🔴 ANCHOR DEBUGGER: Apare doar dacă avem date în store */}
-            {discardLayout && (
-                <View
-                    pointerEvents="none" // Să nu blocheze click-urile
-                    style={{
-                        position: 'absolute',
-                        left: discardLayout.x,
-                        top: discardLayout.y,
-                        width: discardLayout.width,
-                        height: discardLayout.height,
-                        borderWidth: 2,
-                        borderColor: 'red', // Culoare stridentă pentru debug
-                        backgroundColor: 'rgba(255, 0, 0, 0.2)', // Fundal semi-transparent
-                        zIndex: 9999,
-                        justifyContent: 'center',
-                        alignItems: 'center'
-                    }}
-                >
-                    {/*<Text>DISCARD ANCHOR</Text>*/}
-                </View>
-            )}
 
+                {/* 🌟 The card HOVERING (The one you just threw) */}
+                {offsetSlotCard && flyingCards.length == 0 && (
+                    <View
+                        pointerEvents="none"
+                        style={{
+                            position: 'absolute',
+                            left: scale(DISCARD_OFFSET.x), // Offset to the right
+                            top: scale(DISCARD_OFFSET.y),
+                            transform: [{ rotateZ: '24deg' }],
+                            zIndex: 10,
+                            elevation: 10,
+                            ...styles.cardSlot
+                        }}
+                    >
+                        <GameCard
+                            card={offsetSlotCard}
+                            cardWidth={BASE_CARD_WIDTH}
+                            style={styles.tableCardArtwork}
+                        />
+                    </View>
+                )}
+            </TouchableOpacity>
         </View>
     );
 }

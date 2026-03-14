@@ -4,6 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { useGameStore } from "@/state/useGameStore";
 import { AppText } from "@/Common/AppText";
 import {useSelf} from "@/state/gameSelectors";
+import {DISCARD_OFFSET} from "@/state/constants";
 
 export const DebugTrajectory = () => {
     const handPositions = useGameStore((s) => s.handPositions);
@@ -13,8 +14,8 @@ export const DebugTrajectory = () => {
     if (!discard || !me) return null;
 // console.log(discard);
     // Centrul absolut al pachetului
-    const toX = discard.x + (discard.width / 2);
-    const toY = discard.y + (discard.height / 2);
+    const toX = discard.x + (discard.width / 2) +DISCARD_OFFSET.x;
+    const toY = discard.y + (discard.height / 2) + DISCARD_OFFSET.y;
 
     return (
         <View

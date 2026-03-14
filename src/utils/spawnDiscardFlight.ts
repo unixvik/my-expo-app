@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 import { convertServerCardToUICard } from '@/utils/suitHelper';
+import {useGameStore} from "@/state/useGameStore";
+import {DISCARD_OFFSET} from "@/state/constants";
 
 export function spawnDiscardFlight({
     selectedDiscardIds,
@@ -16,12 +18,14 @@ export function spawnDiscardFlight({
 }) {
     if (Platform.OS !== 'web') return;
 
-    const endX = discardLayout.x + discardLayout.width / 2;
-    const endY = discardLayout.y + discardLayout.height / 2;
+    const endX = discardLayout.x + (discardLayout.width / 2) + DISCARD_OFFSET.x;
+    const endY = discardLayout.y + (discardLayout.height / 2) + DISCARD_OFFSET.y;
+
 
     selectedDiscardIds.forEach(cardId => {
         const pos = handPositions[cardId];
         const rawCard = hand.find(c => c.id === cardId);
+
         if (pos && rawCard) {
             spawnFlyingCard({
                 id: `${cardId}_fly`,

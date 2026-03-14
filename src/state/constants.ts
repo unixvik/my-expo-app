@@ -13,6 +13,11 @@ export const CARD_ATU_ROTATE_Z = "100deg";
 export const TABLE_TILT = 38;         // Degrees for 3D Perspective
 export const TABLE_PERSPECTIVE = 800;
 
+export const DISCARD_OFFSET = {
+    x: 35,
+    y: 10,
+    rotateZ: 24,
+};
 
 // 3. SANDIA PHYSICS (Reanimated Spring Configs)
 export const SPRING_CONFIGS = {

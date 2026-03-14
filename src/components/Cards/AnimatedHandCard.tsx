@@ -69,9 +69,10 @@ export const AnimatedHandCard = ({
             ref={animatedRef}
             layout={LinearTransition.springify().damping(15)}
             entering={FadeIn.duration(300)}
-            exiting={Platform.OS === 'web'
-                ? null
-                : createDiscardAnimation(discardTarget, handPositions[card.id] ?? null)}
+            // exiting={Platform.OS === 'web'
+            //     ? null
+            //     : createDiscardAnimation(discardTarget, handPositions[card.id] ?? null)}
+            exiting={createDiscardAnimation(discardTarget, handPositions[card.id] ?? null)}
             style={[styles.playerCardWrapper, animatedStyle, { position: 'absolute', zIndex: 1000 }]}
         >
             {/* Transparent overlay used only for cross-platform measureInWindow */}
