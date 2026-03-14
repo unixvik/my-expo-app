@@ -1,11 +1,11 @@
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import type { CardData } from "@/types/game";
+import {create} from 'zustand';
+import {immer} from 'zustand/middleware/immer';
+import type {CardData} from "@/types/game";
 
 interface VisualStore {
     // The cards physically visible in the player's hand on screen
     visualHand: CardData[];
-
+    isClosingFan: boolean;
     // Ghost cards are temporary clones used strictly for flying animations
     flyingCards: { id: string; card: CardData; startX: number; startY: number; endX: number; endY: number }[];
 
@@ -16,13 +16,15 @@ interface VisualStore {
 
     spawnFlyingCard: (ghost: any) => void;
     removeFlyingCard: (id: string) => void;
+
+    triggerFanUp(): void;
 }
 
 export const useVisualStore = create<VisualStore>()(
     immer((set) => ({
         visualHand: [],
         flyingCards: [],
-
+        isClosingFan: false,
         // Called once when joining the room to set up the initial board
         syncInitialHand: (serverHand) => set((state) => {
             state.visualHand = serverHand;
@@ -47,6 +49,15 @@ export const useVisualStore = create<VisualStore>()(
             state.flyingCards = state.flyingCards.filter(c => c.id !== id);
         }),
 
+        // The "Fan Up" Choreographer
+        triggerFanUp: async () => {
+            set({isClosingFan: true});
+
+            // Wait for the animation duration (matches your FannedCardItem)
+            await new Promise(resolve => setTimeout(resolve, 350));
+
+            set({isClosingFan: false});
+        }
 
     }))
 );

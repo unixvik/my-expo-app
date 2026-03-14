@@ -6,6 +6,7 @@ import type {CardData, ClaimServerState, PlayerData} from "@/types/game";
 import {GameTheme} from '@/theme/themeTokens';
 import {Room} from "@colyseus/sdk";
 import {globalRoom} from "@/api/roomInstance";
+import {useVisualStore} from "@/state/useVisualStore";
 
 export type ConnState =
     | { status: "idle" }
@@ -27,6 +28,7 @@ export interface GameStore {
 
     // 3. Local UI State
     local: {
+        discardedCards: string[];
         isClaimOpen: boolean;
         selectedDiscardIds: string[];
         themeId: GameTheme['id'];
@@ -50,6 +52,7 @@ export interface GameStore {
 
     toggleCardSelection: (card: string) => void;
     clearSelection: () => void; // 🌟 Add this line
+    clearDiscardedCards: () => void;
     discardCards: (selectedDiscardIds: string[]) => void;
     drawCards: (fromDiscard: boolean) => void;
     claimGame: () => void;
@@ -91,10 +94,11 @@ const initialServerState: ClaimServerState = {
     currentTurnIndex: 0,
     roundStarterIndex: 0,
 
+
 };
 
 export const useGameStore = create<GameStore>()(
-        immer((set) => ({
+        immer((set,get) => ({
             conn: {status: "idle"},
             playerKey: "",
             isInitialStateSynced: false,
@@ -105,8 +109,8 @@ export const useGameStore = create<GameStore>()(
                 selectedCardId: null,
                 isMyTurn: false,
                 selectedDiscardIds: [],
+                discardedCards: [],
                 isClaimOpen: false,
-
                 heldTopDiscard: null,
             },
             debugPath: null,
@@ -133,6 +137,7 @@ export const useGameStore = create<GameStore>()(
                 // If my turn just ended, clear any lingering highlights
                 if (wasMyTurn && !isNowMyTurn) {
                     state.local.selectedDiscardIds = [];
+                    state.local.discardedCards = [];
                 }
                 state.server = newState;
                 state.isInitialStateSynced = true;
@@ -165,29 +170,42 @@ export const useGameStore = create<GameStore>()(
                 // Take snapshot
                 const pile = state.server.discardPile;
                 state.local.heldTopDiscard = pile.length > 0 ? pile[pile.length - 1] : null;
-
+                state.local.discardedCards = cards;
                 // Send Colyseus message
                 globalRoom?.send("discardCards", {cardIds: cards})
             }),
 
 
-            drawCards: (fromDiscard) => {
-                // 1. Execute side effects outside of the state mutator
-                console.log("DrawCard sending");
-                globalRoom?.send("drawCard", { fromDiscard: fromDiscard });
-                console.log("DrawCard sent!");
+            // drawCards: (fromDiscard) => {
+            //     // 1. Execute side effects outside of the state mutator
+            //     console.log("DrawCard sending");
+            //     globalRoom?.send("drawCard", { fromDiscard: fromDiscard });
+            //     console.log("DrawCard sent!");
+            //
+            //     // 2. Call set exactly ONCE to mutate the Immer draft
+            //     set((state) => {
+            //         console.log("top card discarded - should see the server one");
+            //         state.local.heldTopDiscard = null;
+            //
+            //     });
+            // },
 
-                // 2. Call set exactly ONCE to mutate the Immer draft
-                set((state) => {
-                    console.log("top card discarded - should see the server one");
-                    state.local.heldTopDiscard = null;
-                });
-            },
+            // Inside your gameStore definition
+            drawCards: async (fromDiscard: boolean) => {
+                const { discardedCards } = get().local;
+                const visualStore = useVisualStore.getState();
 
-            releaseHeldDiscard: () => {
+                // 1. If cards are out, ask VisualStore to handle the 'physical' cleanup
+                if (discardedCards.length > 0) {
+                    await visualStore.triggerFanUp();
+                }
+
+                // 2. Game logic proceeds
+                globalRoom?.send("drawCard", { fromDiscard });
+
                 set((state) => {
-                    // 🌟 3. Destroy the snapshot, forcing the UI to read the true Server State again
                     state.local.heldTopDiscard = null;
+
                 });
             },
 
@@ -229,6 +247,10 @@ export const useGameStore = create<GameStore>()(
 
                 // Optional: Log for debugging during development
                 console.log("Selection cleared");
+            }),
+
+            clearDiscardedCards: () => set((state) => {
+                state.local.discardedCards = [];
             }),
 
             requestAddBot: (room) => {

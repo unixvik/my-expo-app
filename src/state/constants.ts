@@ -13,10 +13,17 @@ export const CARD_ATU_ROTATE_Z = "100deg";
 export const TABLE_TILT = 38;         // Degrees for 3D Perspective
 export const TABLE_PERSPECTIVE = 800;
 
+// DISCARD OFFSET
 export const DISCARD_OFFSET = {
     x: 35,
     y: 10,
     rotateZ: 24,
+};
+// DISCARD FAN
+export const FAN_CONFIG = {
+    MAX_VISIBLE_FAN: 4,     // How many cards actually "fan" out
+    ROTATION_STEP: 8,       // Degrees between each card
+    OFFSET_STEP: 10,        // Pixel spread between each card
 };
 
 // 3. SANDIA PHYSICS (Reanimated Spring Configs)

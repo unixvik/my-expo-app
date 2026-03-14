@@ -4,10 +4,9 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
-    Easing,
+    Easing, withDelay,
 } from 'react-native-reanimated';
 import {useVisualStore} from '@/state/useVisualStore';
-import {useGameStore} from '@/state/useGameStore';
 import {GameCard} from '@/components/Cards/GameCard';
 import {
     PLAYER_CARD_WIDTH,
@@ -20,61 +19,33 @@ import {
 import {useResponsive} from '@/hooks/useResponsive';
 import {runOnJS} from "react-native-worklets";
 
-type Phase = 'flying' | 'staged' | 'resting';
 
-const FlyingCardItem = ({
-                            ghost,
-                            cardWidth,
-                            cardHeight,
-                            isMyTurn,
-                            onDone,
-                        }: {
-    ghost: { id: string; card: any; startX: number; startY: number; endX: number; endY: number };
-    cardWidth: number;
-    cardHeight: number;
-    isMyTurn: boolean;
-    onDone: () => void;
-}) => {
-    const { scale } = useResponsive();
+export const FlyingCardItem = ({
+                                   ghost,
+                                   cardWidth,
+                                   cardHeight,
+                                   onDone,
+                                   targetX,
+                                   targetY,
+                                   targetRotation,
+                                   targetRotationX,
+                                   delay // 🌟 Receive the staggered delay
+                               }: any) => {
 
-    // Landing calculations
-    const exactLandingX = ghost.endX - cardWidth / 2 + DISCARD_OFFSET.x;
-    const exactLandingY = ghost.endY - cardHeight / 2 + DISCARD_OFFSET.y;
-    const initialScale = scale(PLAYER_CARD_WIDTH / BASE_CARD_WIDTH);
-
-    // Shared Values
+    // Starting position (Hand)
     const translateX = useSharedValue(ghost.startX - cardWidth / 2);
     const translateY = useSharedValue(ghost.startY - cardHeight / 2);
     const rotateZ = useSharedValue(0);
-    const scaleAnim = useSharedValue(initialScale);
-
-    const FLY_DURATION = 500;
 
     useEffect(() => {
-        // Horizontal travel
-        translateX.value = withTiming(exactLandingX, {
-            duration: FLY_DURATION,
-            easing: Easing.out(Easing.quad),
-        });
+        const config = {duration: 2400, easing: Easing.out(Easing.quad)};
 
-        // Vertical travel (using In-Out or specialized easing for a "toss" feel)
-        translateY.value = withTiming(exactLandingY, {
-            duration: FLY_DURATION,
-            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        }, (finished) => {
-            if (finished) {
-                // Use runOnJS because onDone likely updates Zustand state
-                runOnJS(onDone)();
-            }
-        });
-
-        rotateZ.value = withTiming(DISCARD_OFFSET.rotateZ, {
-            duration: FLY_DURATION
-        });
-
-        scaleAnim.value = withTiming(1.0, {
-            duration: FLY_DURATION
-        });
+        // 🌟 Apply withDelay to stagger the flights
+        translateX.value = withDelay(delay, withTiming(targetX, config));
+        rotateZ.value = withDelay(delay, withTiming(targetRotation, config));
+        translateY.value = withDelay(delay, withTiming(targetY - 100, config, (finished) => {
+            if (finished) runOnJS(onDone)();
+        }));
     }, []);
 
     const animatedStyle = useAnimatedStyle(() => ({
@@ -83,16 +54,17 @@ const FlyingCardItem = ({
         height: cardHeight,
         transform: [
             { perspective: 1000 },
-            { translateX: translateX.value },
-            { translateY: translateY.value },
-            { rotateZ: `${rotateZ.value}deg` },
-            { scale: scaleAnim.value },
+            {translateX: translateX.value},
+            {translateY: translateY.value},
+            // {skewX: `${targetRotationX}deg`},
+            // {skewY: `${-targetRotationX}deg`},
+            {rotateZ: `${rotateZ.value}deg`},
         ],
     }));
 
     return (
         <Animated.View style={animatedStyle} pointerEvents="none">
-            <GameCard card={ghost.card} style={{ width: '100%', height: '100%' }} />
+            <GameCard card={ghost.card} style={{width: '100%', height: '100%'}}/>
         </Animated.View>
     );
 };
@@ -100,7 +72,6 @@ const FlyingCardItem = ({
 export const FlightOverlay = () => {
     const flyingCards = useVisualStore(s => s.flyingCards);
     const removeFlyingCard = useVisualStore(s => s.removeFlyingCard);
-    const isMyTurn = useGameStore(s => s.local.isMyTurn);
 
     const {scale} = useResponsive();
     const cardWidth = scale(BASE_CARD_WIDTH);
@@ -111,17 +82,38 @@ export const FlightOverlay = () => {
     return (
         <Modal transparent visible animationType="none" statusBarTranslucent>
             <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-                {flyingCards.map(ghost => (
-                    <FlyingCardItem
-                        key={ghost.id}
-                        ghost={ghost}
-                        cardWidth={cardWidth}
-                        cardHeight={cardHeight}
-                        isMyTurn={isMyTurn}
-                        scaleMult={scale} // 🌟 Pass down the scaler function
-                        onDone={() => removeFlyingCard(ghost.id)}
-                    />
-                ))}
+                {flyingCards.map((ghost, index) => {
+                    // 1. Math must be identical to FannedCardItem
+                    // const fanRotation = (index * 8) + 360;
+                    const fanRotation = DISCARD_OFFSET.rotateZ;
+                    const fanRotationX = -18;
+                     const fanOffsetX = DISCARD_OFFSET.x + (index * 12);
+                    const fanOffsetY = DISCARD_OFFSET.y + (index * 2);
+
+                    // 2. Global Target = Container PageX/Y + Fan Offset
+                    // Note: We remove the (- cardWidth / 2) because we want
+                    // the left edge to align perfectly with the layout box
+                    const exactLandingX = ghost.endX + fanOffsetX / 2;
+                    const exactLandingY = ghost.endY + fanOffsetY / 2;
+
+                    // 3. Staggered Delay (150ms between each card)
+                    const flightDelay = index * 150;
+
+                    return (
+                        <FlyingCardItem
+                            key={ghost.id}
+                            ghost={ghost}
+                            cardWidth={cardWidth}
+                            cardHeight={cardHeight}
+                            targetX={exactLandingX}
+                            targetY={exactLandingY}
+                            targetRotation={fanRotation}
+                            targetRotationX={fanRotationX}
+                            delay={flightDelay}
+                            onDone={() => removeFlyingCard(ghost.id)}
+                        />
+                    );
+                })}
             </View>
         </Modal>
     );
