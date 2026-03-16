@@ -33,28 +33,27 @@ const seatMaps: Record<number, SeatPosition[]> = {
 
 export function getSeatedOpponents(
     turnOrder: string[] | undefined,
-    myId: string | undefined,
-    allPlayers: ClaimServerState["players"]
+    myId: string | undefined
 ) {
-    if (!turnOrder || !myId || turnOrder.length === 0) return [];
+    // 1. Verificări de bază: dacă nu avem date, returnăm listă goală
+    if (!turnOrder || !myId || turnOrder.length <= 1) return [];
 
     const myIndex = turnOrder.indexOf(myId);
     if (myIndex === -1) return [];
 
-    // 'rotated' starts with the person who acts AFTER you
-    const rotated = [
+    // 2. Rotim lista astfel încât primul element să fie jucătorul de după mine
+    const rotatedIds = [
         ...turnOrder.slice(myIndex + 1),
         ...turnOrder.slice(0, myIndex)
     ];
 
-    const opponentCount = rotated.length;
+    const opponentCount = rotatedIds.length;
+    // Mapăm configurația locurilor în funcție de numărul de oponenți
     const currentMap = seatMaps[opponentCount] || seatMaps[5];
 
-    return rotated.map((id, index) => ({
-        ...allPlayers[id],
+    // 3. Returnăm DOAR ID-ul și seat-ul (fără datele despre mână/nume)
+    return rotatedIds.map((id, index) => ({
         id,
-        // Because seatMaps[3] is ['TOP_LEFT', 'TOP', 'TOP_RIGHT'],
-        // the next player goes to the Left, the next to Top, etc.
         seat: currentMap[index]
     }));
 }

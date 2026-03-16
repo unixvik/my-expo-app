@@ -1,5 +1,3 @@
-// src/hooks/useRoomConnection.ts
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Room } from "@colyseus/sdk";
 import { CloseCode } from "@colyseus/sdk";
@@ -9,25 +7,22 @@ import { useGameStore } from "@/state/useGameStore";
 
 import { attachStateSync } from "@/api/stateSync";
 import { attachMessageQueue } from "@/api/messageQueue";
-import {getOrCreatePlayerKey, getStoredName, saveStoredName} from "@/utils/playerKey";
-import {sessionTag} from "@/utils/helpers";
+import { getOrCreatePlayerKey, getStoredName, saveStoredName } from "@/utils/playerKey";
+import { sessionTag } from "@/utils/helpers";
 
+// 🌟 Import the centralized room setter
 import { setGlobalRoom } from "@/api/roomInstance";
 
 const ROOM_NAME = "claim_room";
 
-// function sessionTag() {
-//     return Math.random().toString(36).slice(2, 10);
-// }
-
 type LeaveReason = "intentional" | "remote" | "error";
-
-
-export let globalRoom: Room<ClaimRoomState> | null = null;
 
 export function useRoomConnection() {
     const roomRef = useRef<Room<ClaimRoomState> | null>(null);
     const [room, setRoom] = useState<Room<ClaimRoomState> | null>(null);
+
+    // 🌟 FIX: Moved connectingRef inside the hook so it functions as a proper lock
+    const connectingRef = useRef(false);
 
     // Store Actions
     const setConn = useGameStore((s) => s.setConn);
@@ -65,6 +60,7 @@ export function useRoomConnection() {
                     }
                     roomRef.current = reconnected;
                     setRoom(reconnected);
+                    setGlobalRoom(reconnected); // 🌟 Keep global instance synced
                     setConn({ status: "connected", roomId: reconnected.roomId, sessionId: reconnected.sessionId });
 
                     setupRoom(reconnected);
@@ -73,6 +69,7 @@ export function useRoomConnection() {
                 .catch((err) => {
                     roomRef.current = null;
                     setRoom(null);
+                    setGlobalRoom(null); // 🌟 Nuke global on error
                     setConn({ status: "error", message: err instanceof Error ? err.message : "Reconnect failed" });
                 });
         });
@@ -80,8 +77,10 @@ export function useRoomConnection() {
         r.onLeave((code: number) => {
             if (roomRef.current !== r) return;
             const reason = leaveReasonRef.current;
+
             roomRef.current = null;
             setRoom(null);
+            setGlobalRoom(null); // 🌟 Nuke global on leave
 
             if (reason === "intentional") {
                 setConn({ status: "idle" });
@@ -96,23 +95,21 @@ export function useRoomConnection() {
     const connect = useCallback(async () => {
         if (roomRef.current || connectingRef.current) return;
 
+        connectingRef.current = true; // Lock connection attempts
         const myAttempt = ++attemptRef.current;
         setConn({ status: "connecting" });
 
         try {
-            // 1. Get the persistent key
             const playerKey = await getOrCreatePlayerKey();
 
-            // 🌟 Check if we have a name, otherwise use a stable one
             let name = await getStoredName();
             if (!name) {
-                name = `Vik-${sessionTag()}`; // Only create the tag ONCE in the app's lifetime
+                name = `Vik-${sessionTag()}`;
                 await saveStoredName(name);
             }
 
-            // 2. Pass it to the server in the options object
             const nextRoom = await client.joinOrCreate<ClaimRoomState>(ROOM_NAME, {
-                name: name, // 🌟 Now this is stable across refreshes!
+                name: name,
                 // playerKey: playerKey,
                 customName: "ROOM_123"
             });
@@ -123,18 +120,19 @@ export function useRoomConnection() {
             }
 
             roomRef.current = nextRoom;
-            // 🌟 Use the setter instead of the local variable
-            setGlobalRoom(nextRoom);
+            setRoom(nextRoom);
+            setGlobalRoom(nextRoom); // 🌟 Register safely with the global scope
 
-            // Success logic...
             setConn({ status: "connected", roomId: nextRoom.roomId, sessionId: nextRoom.sessionId });
             setPlayerKey(playerKey);
             setupRoom(nextRoom);
             bindRoomEvents(nextRoom, myAttempt);
         } catch (err) {
             setConn({ status: "error", message: err instanceof Error ? err.message : "Failed to connect" });
+        } finally {
+            connectingRef.current = false; // Unlock connection attempts
         }
-    }, [setConn, setupRoom, bindRoomEvents]);
+    }, [setConn, setupRoom, bindRoomEvents, setPlayerKey]);
 
     const disconnect = useCallback(() => {
         attemptRef.current++;
@@ -142,15 +140,15 @@ export function useRoomConnection() {
 
         const r = roomRef.current;
         roomRef.current = null;
+        setRoom(null);
+        setGlobalRoom(null); // 🌟 Instantly severe global communication
 
-        // 🌟 Force immediate cleanup
         if (r) {
             console.log("Cleaning up room connection...");
-            r.removeAllListeners(); // Stop state updates from hitting the store
-            r.leave(true); // 'true' tells Colyseus to consent to immediate removal
+            r.removeAllListeners();
+            r.leave(true);
         }
 
-        setRoom(null);
         resetStore();
     }, [resetStore]);
 
@@ -161,5 +159,3 @@ export function useRoomConnection() {
 
     return { conn, room, connect, disconnect };
 }
-
-const connectingRef = { current: null as any }; // Internal guard for hook

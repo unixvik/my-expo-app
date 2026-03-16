@@ -1,13 +1,14 @@
-// src/components/GameController.tsx
-
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
+
 import { LobbyScreen } from '@/components/Screens/LobbyScreen';
-import { GameBoard } from '@/components/Screens/GameBoard'; // Your 3D/Table view
+import { GameBoard } from '@/components/Screens/GameBoard';
 import { useGameStore } from '@/state/useGameStore';
 import { AppText } from '@/Common/AppText';
-import { View, ActivityIndicator } from 'react-native';
-import {globalRoom} from "@/hooks/useRoomConnection";
-import {useSyncServer} from "@/hooks/useSyncServer";
+import { useSyncServer } from "@/hooks/useSyncServer";
+
+// 🌟 FIX: Import the stable global instance
+import { globalRoom } from "@/api/roomInstance";
 
 export const GameController = () => {
 

@@ -27,14 +27,14 @@ export const LobbyScreen = () => {
     const setPlayerReady = useGameStore((s) => s.setPlayerReady);
 
 
-    const room=globalRoom;
+    const room= globalRoom;
 
 // console.log(globalRoom);
     // ========================================
     // AUTO ADD BOTS AND PLAY IN ORDER TO TEST
     // ========================================
 
-    const BOTS_TO_ADD = 5;
+    const BOTS_TO_ADD = 1;
     const hasInitializedBots = useRef(false);
 
     useEffect(() => {

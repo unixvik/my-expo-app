@@ -1,6 +1,6 @@
 // src/components/Layers/PlayerLayer.tsx
 
-import React, {useMemo} from "react";
+import React, {useMemo, useRef} from "react";
 import {StyleSheet, TouchableOpacity, View} from "react-native";
 import Animated, {
     LinearTransition,
@@ -15,22 +15,30 @@ import {AppText} from "@/Common/AppText";
 import {convertServerCardToUICard} from "@/utils/suitHelper";
 import {useGameStore} from "@/state/useGameStore";
 import {PLAYER_CARD_WIDTH} from "@/state/constants";
-import {ClaimButton} from "@/components/UI/ClaimButton";
+import {ClaimButton} from "@/components/Buttons/ClaimButton";
 import {AnimatedHandCard} from "@/components/Cards/AnimatedHandCard";
 import {DiscardButton} from "@/components/Buttons/DiscardButton";
 import {useAppStyles} from "@/hooks/useAppStyles";
-import {useActiveGameContext} from "@/hooks/useActiveGameContext";
+import {useAwaitingDraw, useSelf} from "@/state/gameSelectors";
+import {HandValue} from "@/components/UI/Player/HandValue";
+import {Avatar} from "@/components/UI/Player/Avatar";
+import {useGameActions} from "@/hooks/useGameActions";
+import {useGameConstants} from "@/hooks/useGameConstants";
+import {useVisualStore} from "@/state/useVisualStore";
 
 export function PlayerLayer() {
-    const { styles, theme } = useAppStyles();
-    const {
-        me, hand, handValue, avatarLetter, isMyTurn, myId, currentTurn,
-        isClaimOpen, mandatoryDraw, toggleCardSelection,
-        selectedDiscardIds, claimGame
-    } = useActiveGameContext();
-
-    const discardLayout = useGameStore((s) => s.discardLayout);
+    const {styles, theme} = useAppStyles();
+    const {isClaimOpen} = useGameConstants();
+    const mandatoryDraw = useAwaitingDraw();
+    const me = useSelf();
+    const myId = me?.id;
+    // const discardLayout = useVisualStore((s) => s.layouts.discard) ?? null;
     const springConfig = LinearTransition.springify().damping(16).stiffness(160);
+    const currentTurn = useGameStore((s) => s.server.currentTurn);
+    const selectedDiscardIds = useGameStore((s) => s.local.selectedDiscardIds);
+
+    //actions
+    const {toggleCardSelection,claimGame} = useGameActions();
 
 
     return (
@@ -39,8 +47,6 @@ export function PlayerLayer() {
             <DiscardButton
                 styles={styles}
                 myId={myId}
-                currentTurn={currentTurn}
-                mandatoryDraw={mandatoryDraw}
                 hand={me?.hand ?? []}
             />
 
@@ -53,19 +59,18 @@ export function PlayerLayer() {
 
             {/* 🌟 1. SHRINK-WRAP CONTAINER ANIMATION */}
             <Animated.View style={styles.myArea} layout={springConfig}>
+            {/*<Animated.View style={styles.myArea}>*/}
+            {/*<View style={styles.myArea}>*/}
 
-                <View style={styles.sideZone}>
-                    <Animated.View style={[styles.avatarWrap, {transform: [{scale: 1}]}]}>
-                        <LinearGradient colors={["#3d1a6e", "#1a0a3a"]} style={StyleSheet.absoluteFill}/>
-                        <AppText style={styles.avatarLetter}>{avatarLetter}</AppText>
-                    </Animated.View>
-                </View>
+                <Avatar/>
 
                 {/* 🌟 2. HAND CONTAINER ANIMATION */}
-                <View style={[styles.handContainer, {minWidth: 100, justifyContent: 'center', alignItems: 'flex-end'}]}>
+                <Animated.View style={[styles.handContainer, {minWidth: 100, justifyContent: 'center', alignItems: 'flex-end'}]}>
                     {me?.hand?.map((rawCard, index) => {
                         const card = convertServerCardToUICard(rawCard);
+
                         const isSelected = selectedDiscardIds.some(c => c === card.id);
+
                         return (
                             <AnimatedHandCard
                                 key={card.id}
@@ -75,18 +80,13 @@ export function PlayerLayer() {
                                 cardWidth={PLAYER_CARD_WIDTH}
                                 isSelected={isSelected}
                                 onToggleSelect={toggleCardSelection}
-                                discardTarget={discardLayout} // read the discardTarget target
+                                // discardTarget={discardLayout} // read the discardTarget target
                             />
                         );
                     })}
-                </View>
+                </Animated.View>
 
-                <View style={[styles.sideZoneRight]}>
-                    <AppText style={styles.sideZoneRightHand}>Hand</AppText>
-                    <Animated.Text layout={springConfig} style={styles.avatarLetter}>
-                        {handValue}
-                    </Animated.Text>
-                </View>
+                <HandValue/>
 
             </Animated.View>
 

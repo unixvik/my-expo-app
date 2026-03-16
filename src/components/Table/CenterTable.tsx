@@ -1,7 +1,5 @@
 import React, {useMemo} from 'react';
 import {TouchableOpacity, View} from "react-native";
-import {createStyles} from "@/components/Screens/GameBoard.styles";
-import {useTheme} from "@/hooks/useTheme";
 import {useResponsive} from "@/hooks/useResponsive";
 import {useGameStore} from "@/state/useGameStore";
 import {GameCard} from "@/components/Cards/GameCard";
@@ -10,57 +8,37 @@ import {convertServerCardToUICard, parseStringCardsToUI} from "@/utils/suitHelpe
 import {useAwaitingDraw} from "@/state/gameSelectors";
 import {AppText} from "@/Common/AppText";
 import {measure, useAnimatedRef} from "react-native-reanimated";
-import {runOnJS as runOnWorkletJS, runOnUI} from "react-native-worklets";
 import {useVisualStore} from "@/state/useVisualStore";
 import {FannedCardItem} from "@/components/Cards/FannedCardItem";
-import {useActiveGameContext} from "@/hooks/useActiveGameContext";
 import {useAppStyles} from "@/hooks/useAppStyles";
+import {useGameActions} from "@/hooks/useGameActions";
+import {updateLayout} from "@/utils/helpers";
 
 export function CenterTable() {
     const {styles, theme} = useAppStyles();
     const {scale, moderateScale, isLandscape} = useResponsive();
 
-    const {
-        discardPile,
-        heldTopDiscardRaw,
-        offsetSlotCards,
-        offsetSlotCardX,
-        drawCards,
-        mainSlotCard,
-        mainSlotRaw,
-        atuCard,
-        mandatoryDraw, cardsRemaining, flyingCards,
-        discardRef, setDiscardLayout, isClosingFan,
-    } = useActiveGameContext();
     // Store Selectors
-    // const discardPile = useGameStore((s) => s.server.discardPile);
-    // const heldTopDiscardRaw = useGameStore((s) => s.local.heldTopDiscard);
-    // const offsetSlotCardX = useGameStore((s) => s.local.discardedCards);
-    // const drawCards = useGameStore((s) => s.drawCards);
+    const discardPile = useGameStore((s) => s.server.discardPile);
+    const heldTopDiscardRaw = useGameStore((s) => s.local.heldTopDiscard);
+    const offsetSlotCardX = useGameStore((s) => s.local.discardedCards);
+    const {drawCards} = useGameActions();
     //
     // // Animation State
-    // const mainSlotRaw = heldTopDiscardRaw || (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
-    // const mainSlotCard = mainSlotRaw ? convertServerCardToUICard(mainSlotRaw) : null;
-    // const offsetSlotCards = useMemo(() => parseStringCardsToUI(offsetSlotCardX), [offsetSlotCardX]);
+    const mainSlotRaw = heldTopDiscardRaw || (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
+    const mainSlotCard = mainSlotRaw ? convertServerCardToUICard(mainSlotRaw) : null;
+    const offsetSlotCards = useMemo(() => parseStringCardsToUI(offsetSlotCardX), [offsetSlotCardX]);
     //
-    // const atuCard = useGameStore((s) => s.server.atuCard);
-    // const mandatoryDraw = useAwaitingDraw();
-    // const cardsRemaining = useGameStore((s) => s.server.cardsRemaining);
-    // const flyingCards = useVisualStore(s => s.flyingCards);
+    const atuCard = useGameStore((s) => s.server.atuCard);
+    const mandatoryDraw = useAwaitingDraw();
+    const cardsRemaining = useGameStore((s) => s.server.cardsRemaining);
+    const flyingCards = useVisualStore(s => s.flyingCards);
     //
-    // const discardRef = useAnimatedRef<View>();
-    // const setDiscardLayout = useGameStore((s) => s.setDiscardLayout);
-    // const isClosingFan = useVisualStore((s) => s.isClosingFan);
 
-    const handleLayout = () => {
-        runOnUI(() => {
-            'worklet';
-            const m = measure(discardRef);
-            if (m) {
-                runOnWorkletJS(setDiscardLayout)({x: m.pageX, y: m.pageY, width: m.width, height: m.height});
-            }
-        })();
-    };
+    const discardRef = useAnimatedRef<View>();
+    const drawRef = useAnimatedRef<View>();
+
+    const isClosingFan = useVisualStore((s) => s.isClosingFan);
 
     return (
         <View style={styles.centerTable}>
@@ -72,20 +50,22 @@ export function CenterTable() {
                 </View>
             )}
 
-            {/* DECK */}
+            {/*/!* DECK *!/*/}
             <TouchableOpacity
+                ref={drawRef}
+                onLayout={() => updateLayout('deck', drawRef, null)}
                 style={[styles.cardSlot, styles.cardSlotDraw]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(false)} // false = draw from Deck
             >
                 <AppText style={styles.slotLabel}>DECK ({cardsRemaining})</AppText>
-                <GameCard isFacedown cardWidth={BASE_CARD_WIDTH} style={styles.tableCardArtwork}/>
+                <GameCard card={null} isFacedown cardWidth={BASE_CARD_WIDTH} style={styles.tableCardArtwork}/>
             </TouchableOpacity>
 
-            {/* DISCARD */}
+
             <TouchableOpacity
                 ref={discardRef}
-                onLayout={handleLayout}
+                onLayout={() => updateLayout('discard',discardRef,null)}
                 style={[styles.cardSlot, styles.discardSlot]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(true)} // true = draw from Discard

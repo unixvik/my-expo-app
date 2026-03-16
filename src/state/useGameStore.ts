@@ -7,6 +7,7 @@ import {GameTheme} from '@/theme/themeTokens';
 import {Room} from "@colyseus/sdk";
 import {globalRoom} from "@/api/roomInstance";
 import {useVisualStore} from "@/state/useVisualStore";
+import {useRoomConnection} from "@/hooks/useRoomConnection";
 
 export type ConnState =
     | { status: "idle" }
@@ -59,9 +60,6 @@ export interface GameStore {
     requestAddBot: (room: Room | null) => void;
     setPlayerReady: (room: Room | null) => void;
 
-    // Anchors
-    discardLayout: { x: number; y: number; width: number; height: number } | null;
-    setDiscardLayout: (layout: { x: number; y: number; width: number; height: number }) => void;
 
     //DEBUG
     debugPath: {
@@ -70,8 +68,8 @@ export interface GameStore {
     } | null;
     setDebugPath: (path: { from: { x: number; y: number }; to: { x: number; y: number } } | null) => void;
     //
-    handPositions: Record<string, { x: number; y: number }>;
-    setHandPosition: (id: string, pos: { x: number; y: number }) => void;
+    // handPositions: Record<string, { x: number; y: number }>;
+    // setHandPosition: (id: string, pos: { x: number; y: number }) => void;
 
     resetStore: () => void; // For intentional disconnects
 }
@@ -98,7 +96,7 @@ const initialServerState: ClaimServerState = {
 };
 
 export const useGameStore = create<GameStore>()(
-        immer((set,get) => ({
+        immer((set, get) => ({
             conn: {status: "idle"},
             playerKey: "",
             isInitialStateSynced: false,
@@ -114,7 +112,7 @@ export const useGameStore = create<GameStore>()(
                 heldTopDiscard: null,
             },
             debugPath: null,
-            discardLayout: null,
+
             setConn: (newStatus) => set((state) => {
                 state.conn = newStatus;
             }),
@@ -142,6 +140,7 @@ export const useGameStore = create<GameStore>()(
                 state.server = newState;
                 state.isInitialStateSynced = true;
             }),
+
 
             selectCard: (cardId) => set((state) => {
                 state.local.selectedCardId = cardId;
@@ -171,28 +170,16 @@ export const useGameStore = create<GameStore>()(
                 const pile = state.server.discardPile;
                 state.local.heldTopDiscard = pile.length > 0 ? pile[pile.length - 1] : null;
                 state.local.discardedCards = cards;
-                // Send Colyseus message
-                globalRoom?.send("discardCards", {cardIds: cards})
+
+                globalRoom?.send("discardCards", {cardIds: cards});
+
+
             }),
 
 
-            // drawCards: (fromDiscard) => {
-            //     // 1. Execute side effects outside of the state mutator
-            //     console.log("DrawCard sending");
-            //     globalRoom?.send("drawCard", { fromDiscard: fromDiscard });
-            //     console.log("DrawCard sent!");
-            //
-            //     // 2. Call set exactly ONCE to mutate the Immer draft
-            //     set((state) => {
-            //         console.log("top card discarded - should see the server one");
-            //         state.local.heldTopDiscard = null;
-            //
-            //     });
-            // },
-
             // Inside your gameStore definition
             drawCards: async (fromDiscard: boolean) => {
-                const { discardedCards } = get().local;
+                const {discardedCards} = get().local;
                 const visualStore = useVisualStore.getState();
 
                 // 1. If cards are out, ask VisualStore to handle the 'physical' cleanup
@@ -201,7 +188,7 @@ export const useGameStore = create<GameStore>()(
                 }
 
                 // 2. Game logic proceeds
-                globalRoom?.send("drawCard", { fromDiscard });
+                globalRoom?.send("drawCard", {fromDiscard});
 
                 set((state) => {
                     state.local.heldTopDiscard = null;
@@ -212,6 +199,7 @@ export const useGameStore = create<GameStore>()(
             claimGame: () => set((state) => {
                 globalRoom?.send("shoutClaim")
             }),
+
             toggleCardSelection: (cardStr: string) => set((state) => {
                 const sessId = state.conn.status === 'connected' ? state.conn.sessionId : null;
                 if (!sessId) return;
@@ -273,21 +261,15 @@ export const useGameStore = create<GameStore>()(
             }),
 
 
-            // Animations
-            setDiscardLayout: (layout) => set((state) => {
-                state.discardLayout = layout;
-            }),
-
-
             setDebugPath: (path) => set((state) => {
                 state.debugPath = path;
             }),
 
             // În implementarea immer
-            handPositions: {},
-            setHandPosition: (id, pos) => set((state) => {
-                state.handPositions[id] = pos;
-            }),
+            // handPositions: {},
+            // setHandPosition: (id, pos) => set((state) => {
+            //     state.handPositions[id] = pos;
+            // }),
 
         }))
     )

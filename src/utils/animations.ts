@@ -7,7 +7,7 @@ import {Platform} from 'react-native';
 
 
 const IS_WEB = Platform.OS === 'web';
-const OVERLAP_RATIO = IS_WEB ? 1.45 : 0.78;
+const OVERLAP_RATIO = IS_WEB ? 0.95 : -0.2;
 
 export const calculateCardFan = (
     index: number,
@@ -38,7 +38,7 @@ export const calculateCardFan = (
     return {
         translateX,
         translateY,
-        rotateZ: `${rotateZ}deg`
+        rotateZ,
     };
 };
 

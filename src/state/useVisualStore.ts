@@ -2,6 +2,16 @@ import {create} from 'zustand';
 import {immer} from 'zustand/middleware/immer';
 import type {CardData} from "@/types/game";
 
+type ElementLayout = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+
+
+
 interface VisualStore {
     // The cards physically visible in the player's hand on screen
     visualHand: CardData[];
@@ -9,7 +19,18 @@ interface VisualStore {
     // Ghost cards are temporary clones used strictly for flying animations
     flyingCards: { id: string; card: CardData; startX: number; startY: number; endX: number; endY: number }[];
 
+    // Anchors
+    layouts: {
+        deck: ElementLayout | null;
+        discard: ElementLayout | null;
+        opponents: Record<string, ElementLayout>;
+        player: Record<string, ElementLayout>;
+    },
+
+
     // --- Actions ---
+
+    setLayout: (type: 'deck' | 'discard' | 'opponents' | 'player', layout: ElementLayout, playerId?:string) => void;
     syncInitialHand: (serverHand: CardData[]) => void;
     addCardToVisualHand: (card: CardData) => void;
     removeCardFromVisualHand: (cardId: string) => void;
@@ -25,6 +46,29 @@ export const useVisualStore = create<VisualStore>()(
         visualHand: [],
         flyingCards: [],
         isClosingFan: false,
+
+        // Layouts
+        layouts: {
+            deck: null,
+            discard: null,
+            opponents: {},
+            player: {},
+        },
+
+
+        setLayout: (type: 'deck' | 'discard' | 'opponents'| 'player', layout: ElementLayout, key?: string) =>
+            set((state) => {
+                if (type === 'opponents' || type === 'player') {
+                    if (key) {
+                        state.layouts[type][key] = layout;
+                    }
+                } else {
+                    // Pentru deck și discard (care nu au key)
+                    state.layouts[type] = layout;
+                }
+            }),
+
+        ///
         // Called once when joining the room to set up the initial board
         syncInitialHand: (serverHand) => set((state) => {
             state.visualHand = serverHand;

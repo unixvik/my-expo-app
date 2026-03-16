@@ -21,4 +21,5 @@ export const useAwaitingDraw = (): boolean => {
         if (!myId) return false;
         return s.server.players[myId]?.awaitingMandatoryDraw ?? false;
     });
+    // return true;
 };

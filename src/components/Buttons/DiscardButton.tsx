@@ -14,20 +14,21 @@ import {CardData} from "@/types/game";
 interface DiscardButtonProps {
     styles: any;
     myId: string | undefined;
-    currentTurn: string | undefined;
-    mandatoryDraw: boolean;
     hand: CardData[];
 }
 
-export const DiscardButton = ({ styles, myId, currentTurn, mandatoryDraw, hand }: DiscardButtonProps) => {
+export const DiscardButton = ({ styles, myId, hand }: DiscardButtonProps) => {
     const selectedDiscardIds = useGameStore((s) => s.local.selectedDiscardIds || []);
     const clearSelection = useGameStore((s) => s.clearSelection);
     const discardCards = useGameStore((s) => s.discardCards);
-    const discardLayout = useGameStore((s) => s.discardLayout);
-    const handPositions = useGameStore((s) => s.handPositions);
+    const discardLayout = useVisualStore((s) => s.layouts.discard);
+    const handPositions = useVisualStore((s) => s.layouts.player);
     const spawnFlyingCard = useVisualStore((s) => s.spawnFlyingCard);
+    const currentTurn = useGameStore((s) => s.server.currentTurn);
+    const mandatoryDraw = useAwaitingDraw();
 
-    if (selectedDiscardIds.length === 0 || currentTurn !== myId || mandatoryDraw) {
+    const myTurn = currentTurn === myId;
+    if (selectedDiscardIds.length === 0 || !myTurn || mandatoryDraw) {
         return null;
     }
 
