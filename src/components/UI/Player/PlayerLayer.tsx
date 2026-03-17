@@ -124,16 +124,14 @@ export function PlayerLayer() {
 
                         return (
                             <AnimatedHandCard
-
                                 key={card.id}
                                 card={card}
                                 index={index}
                                 totalCards={me.hand.length}
-                                cardWidth={PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO}
+                                cardWidth={PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO} // Only for fan math
                                 isSelected={isSelected}
                                 hoveredCardId={hoveredCardId}
                                 onToggleSelect={toggleCardSelection}
-
                             />
                         );
                     })}

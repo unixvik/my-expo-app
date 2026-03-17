@@ -9,7 +9,7 @@ export function sessionTag() {
     return Math.random().toString(36).slice(2, 10);
 }
 // @ts-ignore
-export const updateLayout = (type,ref, key ) => {
+export const updateLayout = (type, ref, key, subKey?) => {
     if (!ref) return;
     const setLayoutAction = useVisualStore.getState().setLayout;
     runOnUI(() => {
@@ -17,16 +17,9 @@ export const updateLayout = (type,ref, key ) => {
         const m = measure(ref);
         if (m) {
             const data = { x: m.pageX, y: m.pageY, width: m.width, height: m.height };
-            // Capture the state inside the worklet context carefully
-            const layoutData = {
-                x: m.pageX,
-                y: m.pageY,
-                width: m.width,
-                height: m.height
-            };
 
-            // console.log("Data updated for "+type+ " :"+layoutData+ " key: "+key);
-            runOnJS(setLayoutAction)(type, data, key);
+            // console.log("Data updated for " + type + " key: " + key + " subKey: " + subKey);
+            runOnJS(setLayoutAction)(type, data, key, subKey);
         }
     })();
 };

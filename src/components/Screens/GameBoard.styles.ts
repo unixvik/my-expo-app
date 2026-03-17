@@ -157,16 +157,6 @@ export const createStyles = (
             zIndex: Z_INDEX.PILES,
         },
 
-        cardSlot: {
-            width: scale(BASE_CARD_WIDTH),
-            height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
-            borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
-            // backgroundColor: theme.cards.cardFront.backgroundColor,
-opacity: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            ...rnShadow("medium"),
-        },
         cardSlotDraw: {
             width: scale(BASE_CARD_WIDTH),
             height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
@@ -216,13 +206,13 @@ opacity: 1,
             position: "absolute",
             bottom: "5%",
             width: "100%",
-            // minWidth: "25%",
+            minWidth: "25%",
             alignItems: "center",
             // 🌟 In Landscape, we limit the height so it doesn't push the table off-screen
             height: isLandscape ? scale(100) : scale(100),
             justifyContent: "center",
             verticalAlign: "bottom",
-            zIndex: Z_INDEX.HAND+1000,
+            zIndex: Z_INDEX.HAND,
             // marginBottom: "10%",
         },
 
@@ -237,27 +227,30 @@ opacity: 1,
 
         playerCard: {
             // 🌟 Shrink the cards slightly in landscape so they fit the short screen
-            width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
-            height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
-            borderRadius: scale(8),
-            backgroundColor: theme.cards.cardFront.backgroundColor,
-            ...rnShadow("heavy"),
+            // width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
+            // height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
+            // borderRadius: scale(10),
+            // backgroundColor: theme.cards.cardFront.backgroundColor,
+            // ...rnShadow("heavy"),
         },
 
         // 🌟 1. The Physics Box (Casts the shadow, holds the math)
         playerCardWrapper: {
-            width: scale(PLAYER_CARD_WIDTH),
-            height: scale(PLAYER_CARD_WIDTH) * CARD_ASPECT_RATIO,
+            // minWidth: "100%",
+            width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
+            height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
             ...rnShadow("heavy"),
+            borderRadius: scale(10),
+            // opacity: 0.3,
             // CRITICAL: Never put overflow: 'hidden' or backgroundColor here!
         },
 
 // 🌟 2. The Canvas (Clips the artwork)
         playerCardArtwork: {
             flex: 1, // Fills the wrapper perfectly
-            borderRadius: scale(8),
-            backgroundColor: theme.cards.cardFront.backgroundColor,
-            overflow: 'hidden', // Keeps your card images safely inside the rounded corners
+            // borderRadius: scale(8),
+            // backgroundColor: theme.cards.cardFront.backgroundColor,
+            // overflow: 'hidden', // Keeps your card images safely inside the rounded corners
         },
 
         claimButton: {

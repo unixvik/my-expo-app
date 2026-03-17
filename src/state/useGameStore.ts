@@ -69,8 +69,7 @@ export interface GameStore {
     } | null;
     setDebugPath: (path: { from: { x: number; y: number }; to: { x: number; y: number } } | null) => void;
     //
-    // handPositions: Record<string, { x: number; y: number }>;
-    // setHandPosition: (id: string, pos: { x: number; y: number }) => void;
+
 
     resetStore: () => void; // For intentional disconnects
 }

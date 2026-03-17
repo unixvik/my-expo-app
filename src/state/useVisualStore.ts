@@ -23,14 +23,19 @@ interface VisualStore {
     layouts: {
         deck: ElementLayout | null;
         discard: ElementLayout | null;
-        opponents: Record<string, ElementLayout>;
-        player: Record<string, ElementLayout>;
-    },
+        opponents: Record<string, Record<string, ElementLayout>>; // opponentId -> cardId -> layout
+        player: Record<string, ElementLayout>; // cardId -> layout
+    }
 
 
     // --- Actions ---
 
-    setLayout: (type: 'deck' | 'discard' | 'opponents' | 'player', layout: ElementLayout, playerId?:string) => void;
+    setLayout: (
+        type: 'deck' | 'discard' | 'opponents' | 'player',
+        layout: ElementLayout,
+        key?: string, // cardId for player, opponentId for opponents
+        subKey?: string // cardId when type is 'opponents'
+    ) => void;
     syncInitialHand: (serverHand: CardData[]) => void;
     addCardToVisualHand: (card: CardData) => void;
     removeCardFromVisualHand: (cardId: string) => void;

@@ -2,6 +2,8 @@ import {useAppStyles} from "@/hooks/useAppStyles";
 import {useGameStore} from "@/state/useGameStore";
 import {View} from "react-native";
 import {AppText} from "@/Common/AppText";
+import {useAnimatedRef} from "react-native-reanimated";
+import {updateLayout} from "@/utils/helpers";
 
 
 
@@ -15,6 +17,10 @@ function OpponentAvatar({ playerId, seat }:OpponentInterface) {
     // SELECTOR CRITIC: Ascultă DOAR acest jucător
     const player = useGameStore((s) => s.server.players[playerId]);
     const isTheirTurn = useGameStore((s) => s.server.currentTurn === playerId);
+
+    const opponentRef = useAnimatedRef<View>();
+
+
 
     if (!player) return null;
 

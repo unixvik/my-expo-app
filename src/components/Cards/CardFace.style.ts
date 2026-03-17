@@ -2,7 +2,13 @@
 
 import { StyleSheet } from 'react-native';
 import { GameTheme } from '@/theme/themeTokens';
-import {rnShadow, TABLE_OVAL_RATIO} from "@/state/constants";
+import {
+    CARD_ASPECT_RATIO,
+    CARD_PLAYER_SCALE_RATIO,
+    PLAYER_CARD_WIDTH,
+    rnShadow,
+    TABLE_OVAL_RATIO
+} from "@/state/constants";
 
 export const createStyles = (
     theme: GameTheme,
@@ -15,10 +21,15 @@ export const createStyles = (
     cardBase: {
         width: '100%',
         height: '100%',
+        // width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
+        // height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
+        // backgroundColor: theme.cards.cardFront.backgroundColor,
+        borderRadius: scale(10),
+        borderWidth: scale(0),
+        borderColor: 'rgba(0,0,0,0.91)',
+        // borderRadius: scale(16),
         backgroundColor: theme.cards.cardFront.backgroundColor,
-        borderRadius: scale(8),
-        borderWidth: scale(1),
-        borderColor: 'rgba(0,0,0,0.1)',
+        ...rnShadow("heavy"),
         overflow: 'hidden',
     },
     // 🌟 This is the highlight logic

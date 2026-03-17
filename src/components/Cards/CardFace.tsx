@@ -1,38 +1,106 @@
 // src/components/Cards/CardFace.tsx
 
 import React, { useMemo } from 'react';
-import { View, StyleProp, ViewStyle } from 'react-native';
+import { View, StyleProp, ViewStyle, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { AppText } from '@/Common/AppText';
 import { convertSuitToSymbol } from '@/utils/suitHelper';
-import { createStyles } from './CardFace.style';
-import {CardData} from "@/types/game";
-import {useResponsive} from "@/hooks/useResponsive";
-import {PLAYER_CARD_WIDTH} from "@/state/constants";
+import { CardData } from "@/types/game";
+import {
+    PLAYER_CARD_WIDTH,
+    CARD_PLAYER_SCALE_RATIO,
+    CARD_ASPECT_RATIO,
+    TABLE_OVAL_RATIO,
+    rnShadow
+} from "@/state/constants";
 
 interface CardFaceProps {
     card: CardData | null;
-    cardWidth?: number;
     isSelected?: boolean;
+    isFacedown?: boolean;
     style?: StyleProp<ViewStyle>;
 }
 
 export const CardFace = React.memo(({
                                         card,
-                                        cardWidth = PLAYER_CARD_WIDTH,
                                         isSelected = false,
+                                        isFacedown = false,
                                         style
                                     }: CardFaceProps) => {
     const theme = useTheme();
+    const { scale, moderateScale } = useResponsive();
 
-    const { scale, moderateScale, isLandscape } = useResponsive();
+    // Card's intrinsic width (used for both sizing and internal proportions)
+    const cardWidth = PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO;
 
-    const styles = useMemo(() =>
-            createStyles(theme, scale, moderateScale, isLandscape, cardWidth),
-        [theme, scale, cardWidth]
-    );
-    if (!card) return <View style={[styles.cardBase, style]} />
+    const styles = useMemo(() => StyleSheet.create({
+        cardBase: {
+            // 🌟 INTRINSIC DIMENSIONS - CardFace owns its size
+            width: scale(cardWidth),
+            height: scale(cardWidth) * CARD_ASPECT_RATIO,
+            borderRadius: scale(8),
+            backgroundColor: isFacedown
+                ? theme.cards.cardBack.backgroundColor
+                : theme.cards.cardFront.backgroundColor,
+            borderWidth: scale(1),
+            borderColor: 'rgba(0,0,0,0.51)',
+            ...rnShadow("heavy"),
+            overflow: 'hidden',
+        },
+        selected: {
+            borderColor: theme.cards.selectedBorder,
+            borderWidth: scale(2),
+        },
+        cornerTopLeft: {
+            position: 'absolute',
+            top: scale(cardWidth * 0.07),
+            left: scale(cardWidth * 0.07),
+            alignItems: 'center',
+            lineHeight: 1,
+        },
+        cornerBottomRight: {
+            position: 'absolute',
+            bottom: scale(cardWidth * 0.07),
+            right: scale(cardWidth * 0.07),
+            alignItems: 'center',
+            transform: [{ rotate: '180deg' }],
+        },
+        cornerRank: {
+            fontSize: moderateScale(cardWidth * 0.33),
+            fontWeight: '800'
+        },
+        cornerSuit: {
+            fontSize: moderateScale(cardWidth * 0.23),
+            transform: [{
+                translateY: moderateScale(cardWidth * -0.04) * TABLE_OVAL_RATIO,
+            }]
+        },
+        centerWrap: {
+            ...StyleSheet.absoluteFillObject,
+            justifyContent: 'center',
+            alignItems: 'center'
+        },
+        centerSuit: {
+            fontSize: scale(cardWidth * 0.5),
+        },
+    }), [theme, scale, moderateScale, cardWidth, isFacedown]);
 
+    // Handle facedown cards
+    if (isFacedown) {
+        return (
+            <View style={[styles.cardBase, isSelected && styles.selected, style]}>
+                {/* Add your card back pattern here if needed */}
+            </View>
+        );
+    }
+
+    // Handle empty/null cards
+    if (!card) {
+        return <View style={[styles.cardBase, isSelected && styles.selected, style]} />;
+    }
+
+    // Render face-up card
     const isRed = ['hearts', 'diamonds', 'H', 'D', '♥', '♦'].includes(card.suit.toLowerCase());
     const ink = isRed ? theme.cards.suitRed : theme.cards.suitBlack;
     const symbol = convertSuitToSymbol(card.suit);

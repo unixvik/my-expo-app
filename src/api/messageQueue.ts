@@ -1,42 +1,65 @@
 // src/api/messageQueue.ts
-import type { Room } from "@colyseus/sdk";
-import { Mutex } from "async-mutex";
-import type { ClaimRoomState } from "@/colyseus/state";
-import { useGameStore } from "@/state/useGameStore";
+import type {Room} from "@colyseus/sdk";
+import {Mutex} from "async-mutex";
+import type {ClaimRoomState} from "@/colyseus/state";
+import {useGameStore} from "@/state/useGameStore";
+import {useVisualStore} from "@/state/useVisualStore";
+import {spawnDiscardFlight} from "@/utils/spawnDiscardFlight";
 
 // The single, global lock that ensures physical animations play sequentially
 const animationLock = new Mutex();
+
+export interface MessageQueue {
+    playerId: string;
+    cardIds: string[];
+}
 
 /**
  * Attaches message listeners wrapped in a Mutex queue.
  */
 export const attachMessageQueue = (room: Room<ClaimRoomState>) => {
+    room.onMessage("playerDiscarded", async (message: { playerId: string; cardIds: string[] }) => {
+        const { playerId, cardIds } = message;
 
-    room.onMessage("CARD_DRAWN", async (message) => {
-        await animationLock.runExclusive(async () => {
-            // 1. Tell the Card Portal to spawn a Ghost Card and fly it
-            await useGameStore.getState().triggerFlight({
-                cardId: message.cardId,
-                from: message.sourceAnchor, // e.g., 'deck'
-                to: message.destAnchor      // e.g., 'hand_slot_3'
-            });
+        // Get layouts
+        const discardLayout = useVisualStore.getState()?.layouts.discard;
+        const myId = useGameStore.getState().playerKey;
+        console.log("My id: ",myId);
 
-            // 2. Only after the flight finishes, commit the change to the Visual Store
-            useGameStore.getState().commitVisualState('DRAW', message.cardId);
-        });
-    });
+        if (!discardLayout) {
+            console.warn("Discard layout not ready for flight animation");
+            return;
+        }
 
-    room.onMessage("CARD_DISCARDED", async (message) => {
-        await animationLock.runExclusive(async () => {
-            // 1. Trigger flight to the 3D tilted discard pile
-            await useGameStore.getState().triggerFlight({
-                cardId: message.cardId,
-                from: message.sourceAnchor,
-                to: "discard_pile"
-            });
+        // Determine which hand positions to use
+        const isMe = playerId === myId;
+        const handPositions = isMe
+            ? useVisualStore.getState().layouts.player
+            : useVisualStore.getState().layouts.opponents[playerId];
+//
+        console.log("Spoawwwwwwn from", useVisualStore.getState().layouts.opponents);
+        if (!handPositions) {
+            console.warn("Hand positions not ready for flight animation");
+            return;
+        }
 
-            // 2. Commit the change so the UI updates
-            useGameStore.getState().commitVisualState('DISCARD', message.cardId);
+        // Get the hand from game state to pass card data
+        const hand = isMe
+            ? useGameStore.getState().server.players[myId]?.hand
+            : useGameStore.getState().server.players[playerId]?.hand;
+
+        if (!hand) {
+            console.warn("Hand not found for player", playerId);
+            return;
+        }
+;
+        // Spawn flight for each card
+        spawnDiscardFlight({
+            selectedDiscardIds: cardIds,
+            hand,
+            handPositions: handPositions,
+            discardLayout,
+            spawnFlyingCard: useVisualStore.getState().spawnFlyingCard
         });
     });
 

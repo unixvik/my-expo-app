@@ -4,10 +4,13 @@ import {
     Easing
 } from "react-native-reanimated";
 import {Platform} from 'react-native';
+import {spawnDiscardFlight} from "@/utils/spawnDiscardFlight";
+import {useVisualStore} from "@/state/useVisualStore";
 
 
 const IS_WEB = Platform.OS === 'web';
 const OVERLAP_RATIO = IS_WEB ? 0 : -0.2;
+const handPositions = useVisualStore(s=>s.layouts.opponents);
 
 export const calculateCardFan = (
     index: number,
@@ -43,55 +46,20 @@ export const calculateCardFan = (
 };
 
 
-export const createDiscardAnimation = (
-    discardLayout: { x: number, y: number, width: number, height: number } | null,
-    fromPos: { x: number, y: number } | null
+export const createDiscardAnimation = (playerId: string, cardIds: string[]
+
 ) => {
-    return (values: any) => {
-        'worklet';
 
-        // fromPos is measured via measure() at press time and includes all fan transforms.
-        // values.currentGlobalOriginX does NOT include translateX/translateY from animatedStyle,
-        // causing wrong deltaX for cards at the edges of the fan.
-        const cardGlobalCenterX = fromPos
-            ? fromPos.x
-            : values.currentGlobalOriginX + (values.currentWidth / 2);
-        const cardGlobalCenterY = fromPos
-            ? fromPos.y
-            : values.currentGlobalOriginY + (values.currentHeight / 2);
+    console.log(playerId);
+    const selectedDiscardIds = cardIds;
+    console.log(handPositions);
+    // spawnDiscardFlight({
+    //     selectedDiscardIds,
+    //     hand: [],
+    //     handPositions,
+    //     discardLayout,
+    //     spawnFlyingCard
+    // });
 
-        let targetX = cardGlobalCenterX;
-        let targetY = cardGlobalCenterY - 300;
 
-        if (discardLayout) {
-            targetX = discardLayout.x + (discardLayout.width / 2);
-            targetY = discardLayout.y + (discardLayout.height / 2);
-        }
-
-        const deltaX = targetX - cardGlobalCenterX;
-        const deltaY = targetY - cardGlobalCenterY;
-console.log("Discard animation");
-        return {
-            initialValues: {
-                originX: values.currentOriginX,
-                originY: values.currentOriginY,
-                rotateZ: '0deg',
-                scale: 1,
-                opacity: 1,
-                zIndex: 9999,
-            },
-            animations: {
-                originX: withTiming(values.currentOriginX + deltaX, {
-                    duration: 2400,
-                    easing: Easing.out(Easing.quad)
-                }),
-                originY: withTiming(values.currentOriginY + deltaY, {
-                    duration: 2400,
-                    easing: Easing.in(Easing.quad)
-                }),
-                scale: withTiming(0.6, { duration: 2400 }),
-                opacity: withDelay(350, withTiming(0, { duration: 50 })),
-            },
-        };
-    };
 };
