@@ -8,7 +8,7 @@ import {
     Z_INDEX, rnShadow, CARD_ATU_ROTATE_Z,
     BASE_CARD_WIDTH,
     PLAYER_CARD_WIDTH,
-    TABLE_OVAL_RATIO,
+    TABLE_OVAL_RATIO, CARD_PLAYER_SCALE_RATIO,
 } from '@/state/constants';
 
 const seatTop = 5 * TABLE_OVAL_RATIO;
@@ -162,7 +162,7 @@ export const createStyles = (
             height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
             borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
             // backgroundColor: theme.cards.cardFront.backgroundColor,
-
+opacity: 1,
             justifyContent: "center",
             alignItems: "center",
             ...rnShadow("medium"),
@@ -182,7 +182,8 @@ export const createStyles = (
             height: '100%',
             borderRadius: scale(8),
             backgroundColor: theme.cards.cardFront.backgroundColor, // Gives the facedown deck a solid base
-            overflow: 'hidden', // Clips the card art perfectly
+            overflow: 'hidden',
+            ...rnShadow("heavy"),
         },
         slotLabel: {
             fontSize: moderateScale(8),
@@ -208,6 +209,7 @@ export const createStyles = (
         discardSlot: {
             borderColor: theme.accent,
             borderWidth: scale(2),
+            zIndex: Z_INDEX.PILES,
         },
 
         playerZone: {
@@ -229,17 +231,18 @@ export const createStyles = (
             justifyContent: "center",
             marginBottom: scale(0),
             zIndex: Z_INDEX.HAND,
+
         },
 
 
-        // playerCard: {
-        //     // 🌟 Shrink the cards slightly in landscape so they fit the short screen
-        //     width: scale(PLAYER_CARD_WIDTH),
-        //     height: scale(PLAYER_CARD_WIDTH) * CARD_ASPECT_RATIO,
-        //     borderRadius: scale(8),
-        //     backgroundColor: theme.cards.cardFront.backgroundColor,
-        //     ...rnShadow("heavy"),
-        // },
+        playerCard: {
+            // 🌟 Shrink the cards slightly in landscape so they fit the short screen
+            width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
+            height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
+            borderRadius: scale(8),
+            backgroundColor: theme.cards.cardFront.backgroundColor,
+            ...rnShadow("heavy"),
+        },
 
         // 🌟 1. The Physics Box (Casts the shadow, holds the math)
         playerCardWrapper: {
@@ -273,11 +276,11 @@ export const createStyles = (
 
         discardButton: {
             position: "absolute",
-            top: -scale(60),
+            top: -scale(160),
             alignSelf: "center",
             backgroundColor: theme.accent,
-            paddingVertical: scale(12),
-            paddingHorizontal: scale(24),
+            paddingVertical: scale(10),
+            paddingHorizontal: scale(20),
             borderRadius: scale(25),
             zIndex: Z_INDEX.UI_OVERLAYS,
             ...rnShadow("heavy"),

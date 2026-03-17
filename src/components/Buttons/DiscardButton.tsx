@@ -36,7 +36,9 @@ export const DiscardButton = ({ styles, myId, hand }: DiscardButtonProps) => {
         <Animated.View entering={FadeInDown} exiting={FadeOutUp} style={styles.discardButton}>
             <TouchableOpacity
                 onPress={() => {
+
                     if (discardLayout) {
+                        console.log(discardLayout);
                         spawnDiscardFlight({
                             selectedDiscardIds,
                             hand: hand,

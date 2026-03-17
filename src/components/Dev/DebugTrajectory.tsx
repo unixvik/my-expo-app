@@ -5,10 +5,11 @@ import { useGameStore } from "@/state/useGameStore";
 import { AppText } from "@/Common/AppText";
 import {useSelf} from "@/state/gameSelectors";
 import {DISCARD_OFFSET} from "@/state/constants";
+import {useVisualStore} from "@/state/useVisualStore";
 
 export const DebugTrajectory = () => {
-    const handPositions = useGameStore((s) => s.handPositions);
-    const discard = useGameStore((s) => s.discardLayout);
+    const handPositions = useVisualStore((s) => s.layouts.player);
+    const discard = useVisualStore((s) => s.layouts.discard);
     const me = useSelf();
 
     if (!discard || !me) return null;
@@ -29,7 +30,7 @@ export const DebugTrajectory = () => {
                 bottom: 0,
                 width: '100%',
                 height: '100%',
-                zIndex: 999999,
+                zIndex: 100,
             }}
         >
             {/* Punctul END */}
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 999999,
+        zIndex: 100,
     },
     label: {
         fontSize: 8,

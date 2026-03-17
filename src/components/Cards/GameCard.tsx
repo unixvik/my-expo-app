@@ -14,13 +14,13 @@ interface GameCardProps {
     style?: StyleProp<ViewStyle>;
 }
 
-export const GameCard = ({ card, isFacedown=false,isSelected, style,}: GameCardProps) => {
+export const GameCard = ({ card, isFacedown=false,isSelected, style,cardWidth}: GameCardProps) => {
 
     return (
         // 🌟 The inner container shapes the actual artwork
         <View style={style}>
             {/* If it's the front of the card: */}
-            {!isFacedown ? ( <CardFace card={card} /> ) :
+            {!isFacedown ? ( <CardFace cardWidth={cardWidth} card={card} /> ) :
                 (
                 <CardBack />
                 )}

@@ -8,6 +8,7 @@ import {Room} from "@colyseus/sdk";
 import {globalRoom} from "@/api/roomInstance";
 import {useVisualStore} from "@/state/useVisualStore";
 import {useRoomConnection} from "@/hooks/useRoomConnection";
+import {convertServerCardToUICard} from "@/utils/suitHelper";
 
 export type ConnState =
     | { status: "idle" }

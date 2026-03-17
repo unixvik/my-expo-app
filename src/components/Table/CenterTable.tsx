@@ -65,7 +65,7 @@ export function CenterTable() {
 
             <TouchableOpacity
                 ref={discardRef}
-                onLayout={() => updateLayout('discard',discardRef,null)}
+                onLayout={() => updateLayout('discard',discardRef,1)}
                 style={[styles.cardSlot, styles.discardSlot]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(true)} // true = draw from Discard

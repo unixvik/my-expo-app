@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "UIRequiresFullScreen": true
-      }
+      },
+      "bundleIdentifier": "com.anonymous.CLAIM-NEW"
     },
     "android": {
       "adaptiveIcon": {

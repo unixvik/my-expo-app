@@ -7,8 +7,8 @@ import {GameCard} from "@/components/Cards/GameCard";
 export const FannedCardItem = ({ card, index, isClosing, scale, styles }) => {
     // Current fan spread positions
     const fanRotation = (index * 8) + 12;
-    const fanX = scale(DISCARD_OFFSET.x + (index * 12));
-    const fanY = scale(DISCARD_OFFSET.y - (index * 2));
+    const fanX = (DISCARD_OFFSET.x + (index * 20));
+    const fanY = (DISCARD_OFFSET.y - (index * 2));
 
     // Initialize with spread values
     const rotation = useSharedValue(fanRotation);
@@ -32,6 +32,7 @@ export const FannedCardItem = ({ card, index, isClosing, scale, styles }) => {
         transform: [{ rotateZ: `${rotation.value}deg` }],
         zIndex: 10 + index,
         elevation: 10 + index,
+
         ...styles.cardSlot
     }));
 

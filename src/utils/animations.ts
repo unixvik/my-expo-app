@@ -7,7 +7,7 @@ import {Platform} from 'react-native';
 
 
 const IS_WEB = Platform.OS === 'web';
-const OVERLAP_RATIO = IS_WEB ? 0.95 : -0.2;
+const OVERLAP_RATIO = IS_WEB ? 0 : -0.2;
 
 export const calculateCardFan = (
     index: number,
