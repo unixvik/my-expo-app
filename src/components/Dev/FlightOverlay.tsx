@@ -187,11 +187,11 @@ export const FlightOverlay = () => {
 
         if (flyingCards.length > 0) {
             containerPerspective.value = withTiming(TABLE_PERSPECTIVE, {
-                duration: Math.min(FLIGHT_DURATION, 1000),
+                duration: Math.min(FLIGHT_DURATION, 100),
                 easing: Easing.bezier(0.33, 1, 0.68, 1)
             });
             containerTilt.value = withTiming(TABLE_TILT, {
-                duration: Math.min(FLIGHT_DURATION, 1000),
+                duration: Math.min(FLIGHT_DURATION, 100),
                 easing: Easing.bezier(0.33, 1, 0.68, 1)
             });
         } else {
@@ -203,11 +203,11 @@ export const FlightOverlay = () => {
     const handleCardDone = (id: string) => {
         completedRef.current.add(id);
         if (completedRef.current.size === totalCardsRef.current) {
-            setTimeout(() => {
+            // setTimeout(() => {
                 // To avoid closure issues, rely on the store action, or use the zustand state directly here
                 const currentFlyingCards = useVisualStore.getState().flyingCards;
                 currentFlyingCards.forEach(card => removeFlyingCard(card.id));
-            }, 40);
+            // }, 40);
         }
     };
 
@@ -225,13 +225,14 @@ export const FlightOverlay = () => {
             <Animated.View style={[StyleSheet.absoluteFillObject, containerStyle]}>
                 {flyingCards.map((ghost, index) => {
                     const isDraw = ghost.type === 'draw';
-
+                    const fanIndex = ghost.fanIndex ?? 0;
                     const fanPos = getFanPosition(index);
-                    const landingX = isDraw ? (ghost.endX || 0) : (discardLayout?.x+DISCARD_OFFSET.x || 0) + fanPos.x;
+                    const landingX = isDraw ? (ghost.endX || 0) : (discardLayout?.x+scale(10) || 0)+ fanPos.x;
                     // const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y - discardLayout?.y/2 +DISCARD_OFFSET.x|| 0) + fanPos.y;
-                    const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y - fanPos.y);
+                    const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y-+DISCARD_OFFSET.y) -fanPos.y;
                     const landingRotation = isDraw ? 0 : fanPos.rotation;
-                    const delay = index * 20;
+                    const delay = fanIndex * 20; // ✅ Use fanIndex for stagger
+
 
                     return (
                         <FlyingCardItem

@@ -1,14 +1,15 @@
 import {convertServerCardToUICard, parseStringCardToUI} from '@/utils/suitHelper';
 import {DISCARD_OFFSET} from "@/state/constants";
+import {useVisualStore} from "@/state/useVisualStore";
 
 export function spawnDiscardFlight({
-    selectedDiscardIds,
-    hand,
-    handPositions,
-    discardLayout,
-    spawnFlyingCard,
-    isFacedown = false,
-}: {
+                                       selectedDiscardIds,
+                                       hand,
+                                       handPositions,
+                                       discardLayout,
+                                       spawnFlyingCard,
+                                       isFacedown = false,
+                                   }: {
     selectedDiscardIds: string[];
     hand: any[];
     handPositions: Record<string, { x: number; y: number }>;
@@ -18,11 +19,17 @@ export function spawnDiscardFlight({
 }) {
     const endX = discardLayout.x + (discardLayout.width / 2) + DISCARD_OFFSET.x;
     const endY = discardLayout.y + (discardLayout.height / 2) + DISCARD_OFFSET.y;
-// console.log(isFacedown);
-    selectedDiscardIds.forEach(cardId => {
+
+    // ✅ Get current discard pile count to calculate final fan indices
+    const currentDiscardCount =selectedDiscardIds.length || 0;
+
+    selectedDiscardIds.forEach((cardId, localIndex) => {
         const pos = handPositions[cardId];
-        // console.log(cardId);
+
         if (pos) {
+            // ✅ Calculate the final index this card will have in the fan
+            const finalFanIndex = currentDiscardCount + localIndex;
+
             spawnFlyingCard({
                 id: `${cardId}_fly`,
                 card: cardId,
@@ -32,6 +39,7 @@ export function spawnDiscardFlight({
                 endY,
                 isFacedown,
                 type: 'discard',
+                fanIndex: finalFanIndex, // ✅ Add fan index
             });
         }
     });

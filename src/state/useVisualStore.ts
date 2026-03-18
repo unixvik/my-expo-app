@@ -11,13 +11,14 @@ type ElementLayout = {
 
 export interface FlyingCard {
     id: string;
-    card?: string; // Be sure to pass the parsed object here, not the string!
+    card: string;
     startX: number;
     startY: number;
-    endX: number;
-    endY: number;
-    isFacedown?: boolean;
-    type?: 'discard' | 'draw';
+    endX?: number;
+    endY?: number;
+    type: 'draw' | 'discard';
+    isFacedown: boolean;
+    fanIndex?: number; // ✅ Add this
 }
 
 
