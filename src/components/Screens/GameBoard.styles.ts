@@ -158,6 +158,7 @@ export const createStyles = (
         },
 
         cardSlotDraw: {
+
             width: scale(BASE_CARD_WIDTH),
             height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
             borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
@@ -201,6 +202,10 @@ export const createStyles = (
             borderColor: theme.accent,
             borderWidth: scale(2),
             zIndex: Z_INDEX.PILES,
+            // width: "100%",
+            // transform: [{translateY: -40}],
+            width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
+            height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
         },
 
         playerZone: {

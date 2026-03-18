@@ -17,6 +17,7 @@ let counter = 0;
 
 const DebugFlightSpawner = () => {
     const discardLayout = useVisualStore(s => s.layouts.discard);
+    const deckLayout = useVisualStore(s => s.layouts.deck);
     const playerLayout = useVisualStore(s => s.layouts.player);
     const flyingCards = useVisualStore(s => s.flyingCards);
     const spawnFlyingCard = useVisualStore(s => s.spawnFlyingCard);
@@ -28,6 +29,34 @@ const DebugFlightSpawner = () => {
     const [auto, setAuto] = useState(false);
     const autoRef = useRef(auto);
     autoRef.current = auto;
+
+    const spawnFromDeck = () => {
+        if (!deckLayout || !playerLayout) {
+            console.warn('⚠️ Missing deck or player layout');
+            return;
+        }
+
+        const firstCard = Object.values(playerLayout)[0];
+        if (!firstCard) {
+            console.warn('⚠️ No player card layout found');
+            return;
+        }
+
+        spawnFlyingCard({
+            id: `deck_fly_${counter++}`,
+            card: { suit: 'hearts', rank: 'A', value: 11, id: 'debug-deck-draw' },
+            startX: deckLayout.x + deckLayout.width / 2,
+            startY: deckLayout.y + deckLayout.height / 2,
+            endX: firstCard.x + firstCard.width / 2,
+            endY: firstCard.y + firstCard.height / 2,
+            isFacedown: true,
+            type: 'draw',
+        });
+
+        setTimeout(() => {
+            useVisualStore.getState().removeFlyingCard(`deck_fly_${counter - 1}`);
+        }, 700);
+    };
 
     const spawn = () => {
         if (!discardLayout || !playerLayout) {
@@ -112,6 +141,20 @@ const DebugFlightSpawner = () => {
                 </Pressable>
 
                 <Pressable
+                    onPress={spawnFromDeck}
+                    style={{
+                        backgroundColor: '#b45309',
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 6
+                    }}
+                >
+                    <Text style={{color: '#fff', fontSize: 11, fontWeight: 'bold'}}>
+                        🂠 DECK→ME
+                    </Text>
+                </Pressable>
+
+                <Pressable
                     onPress={() => setAuto(v => !v)}
                     style={{
                         backgroundColor: auto ? '#16a34a' : '#374151',
@@ -125,6 +168,33 @@ const DebugFlightSpawner = () => {
                     </Text>
                 </Pressable>
             </View>
+
+            {/* 🟠 DECK DEBUG */}
+            {deckLayout && (
+                <View
+                    pointerEvents="none"
+                    style={{
+                        position: 'absolute',
+                        left: deckLayout.x,
+                        top: deckLayout.y ,
+                        width: deckLayout.width,
+                        height: deckLayout.height,
+                        borderWidth: 2,
+                        borderColor: 'orange',
+                        zIndex: 2,
+                    }}
+                >
+                    <Text style={{
+                        color: 'orange',
+                        fontSize: 10,
+                        fontWeight: 'bold',
+                        position: 'absolute',
+                        top: -16,
+                    }}>
+                        Deck
+                    </Text>
+                </View>
+            )}
 
             {/* 🔴 DISCARD DEBUG */}
             {discardLayout && (
@@ -187,67 +257,67 @@ const DebugFlightSpawner = () => {
             )}
 
             {/* 🔵 PLAYER DEBUG */}
-            {/*{playerLayout && Object.entries(playerLayout).map(([key, layout]) => (*/}
-            {/*    <React.Fragment key={`player_${key}`}>*/}
+            {playerLayout && Object.entries(playerLayout).map(([key, layout]) => (
+                <React.Fragment key={`player_${key}`}>
 
-            {/*        /!* blue box *!/*/}
-            {/*        <View*/}
-            {/*            pointerEvents="none"*/}
-            {/*            style={{*/}
-            {/*                position: 'absolute',*/}
-            {/*                left: layout.x,*/}
-            {/*                top: layout.y,*/}
-            {/*                width: layout.width,*/}
-            {/*                height: layout.height,*/}
-            {/*                borderWidth: 2,*/}
-            {/*                borderColor: 'blue',*/}
-            {/*                backgroundColor: 'rgba(0,0,255,0.15)',*/}
-            {/*                zIndex: 10,*/}
-            {/*            }}*/}
-            {/*        >*/}
-            {/*            <Text style={{*/}
-            {/*                color: 'blue',*/}
-            {/*                fontSize: 10,*/}
-            {/*                fontWeight: 'bold',*/}
-            {/*                position: 'absolute',*/}
-            {/*                top: -16*/}
-            {/*            }}>*/}
-            {/*                Player {key}*/}
-            {/*            </Text>*/}
-            {/*        </View>*/}
+                    {/* blue box */}
+                    <View
+                        pointerEvents="none"
+                        style={{
+                            position: 'absolute',
+                            left: layout.x,
+                            top: layout.y,
+                            width: layout.width,
+                            height: layout.height,
+                            borderWidth: 2,
+                            borderColor: 'blue',
+                            backgroundColor: 'rgba(0,0,255,0.15)',
+                            zIndex: 10,
+                        }}
+                    >
+                        <Text style={{
+                            color: 'blue',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            position: 'absolute',
+                            top: -16
+                        }}>
+                            Player {key}
+                        </Text>
+                    </View>
 
-            {/*        /!* center *!/*/}
-            {/*        <View*/}
-            {/*            pointerEvents="none"*/}
-            {/*            style={{*/}
-            {/*                position: 'absolute',*/}
-            {/*                left: layout.x + layout.width / 2 - 10,*/}
-            {/*                top: layout.y + layout.height / 2 - 10,*/}
-            {/*                width: 20,*/}
-            {/*                height: 20,*/}
-            {/*                zIndex: 11,*/}
-            {/*            }}*/}
-            {/*        >*/}
-            {/*            <View style={{*/}
-            {/*                position: 'absolute',*/}
-            {/*                left: 9,*/}
-            {/*                top: 0,*/}
-            {/*                width: 2,*/}
-            {/*                height: 20,*/}
-            {/*                backgroundColor: 'cyan'*/}
-            {/*            }}/>*/}
-            {/*            <View style={{*/}
-            {/*                position: 'absolute',*/}
-            {/*                left: 0,*/}
-            {/*                top: 9,*/}
-            {/*                width: 20,*/}
-            {/*                height: 2,*/}
-            {/*                backgroundColor: 'cyan'*/}
-            {/*            }}/>*/}
-            {/*        </View>*/}
+                    {/* center */}
+                    <View
+                        pointerEvents="none"
+                        style={{
+                            position: 'absolute',
+                            left: layout.x + layout.width / 2 - 10,
+                            top: layout.y + layout.height / 2 - 10,
+                            width: 20,
+                            height: 20,
+                            zIndex: 11,
+                        }}
+                    >
+                        <View style={{
+                            position: 'absolute',
+                            left: 9,
+                            top: 0,
+                            width: 2,
+                            height: 20,
+                            backgroundColor: 'cyan'
+                        }}/>
+                        <View style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 9,
+                            width: 20,
+                            height: 2,
+                            backgroundColor: 'cyan'
+                        }}/>
+                    </View>
 
-            {/*    </React.Fragment>*/}
-            {/*))}*/}
+                </React.Fragment>
+            ))}
         </>
     );
 };

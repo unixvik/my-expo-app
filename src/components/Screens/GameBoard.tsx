@@ -30,7 +30,7 @@ export const GameBoard = () => {
             <GameStatusOverlay/>
             {/*<DebugTrajectory/>*/}
             <FlightOverlay/>
-            {/*<DebugFlightSpawner/>*/}
+            <DebugFlightSpawner/>
             {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
             <View style={styles.tableContainer}>
                 {/* 1. THE 3D ENVIRONMENT */}

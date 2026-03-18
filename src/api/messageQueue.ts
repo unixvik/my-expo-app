@@ -73,7 +73,7 @@ export const attachMessageQueue = (room: Room<ClaimRoomState>) => {
     room.onMessage("playerDrew", (message: { playerId: string; fromDiscard: boolean; cardId?: string }) => {
         const {playerId, fromDiscard, cardId} = message;
 
-        console.log("playerId", playerId, "drew. FROM DISCARD? - ", fromDiscard, " cardID: ", cardId);
+        // console.log("playerId", playerId, "drew. FROM DISCARD? - ", fromDiscard, " cardID: ", cardId);
         // const myId = useGameStore.getState().playerKey;
         // if (playerId === myId) return; // player's own draw is handled by CARD_DRAWN
         //
@@ -89,8 +89,12 @@ export const attachMessageQueue = (room: Room<ClaimRoomState>) => {
         const sourceY = sourceLayout.y + sourceLayout.height / 2;
         //
 
-        useVisualStore.getState().triggerFanUp();
-        console.log("ran trigger fan up");
+        useVisualStore.getState().triggerFanUp().then(() => {
+            useGameStore.setState((state: any) => {
+                state.local.discardedCards = [];
+                state.local.heldTopDiscard = null;
+            });
+        });
 
 
         //

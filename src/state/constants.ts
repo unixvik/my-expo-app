@@ -20,6 +20,14 @@ export const DISCARD_OFFSET = {
     y: 10,
     rotateZ: 14,
 };
+
+// Shared fan position formula — used by both FannedCardItem and FlightOverlay
+// Returns offsets relative to the discard slot origin
+export const getFanPosition = (index: number) => ({
+    x: DISCARD_OFFSET.x + index * 25,
+    y: DISCARD_OFFSET.y - index * 22,
+    rotation: (index * 8) + 12,
+});
 // DISCARD FAN
 export const FAN_CONFIG = {
     MAX_VISIBLE_FAN: 4,     // How many cards actually "fan" out

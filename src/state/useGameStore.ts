@@ -144,16 +144,7 @@ export const useGameStore = create<GameStore>()(
                     state.isInitialStateSynced = true;
                 });
 
-                // When the turn changes and fanned cards are visible, animate them closed
-                // then clear — mirrors the await triggerFanUp() in the player's drawCards action
-                if (turnChanged && current.local.discardedCards.length > 0) {
-                    useVisualStore.getState().triggerFanUp().then(() => {
-                        set((state) => {
-                            state.local.discardedCards = [];
-                            state.local.heldTopDiscard = null;
-                        });
-                    });
-                }
+                // Fan close + discardedCards clear is handled by playerDrew (all players)
             },
 
 
@@ -196,7 +187,7 @@ export const useGameStore = create<GameStore>()(
             drawCards: async (fromDiscard: boolean) => {
                 const {discardedCards} = get().local;
                 const visualStore = useVisualStore.getState();
-
+                console.log("Draw cards  , from discard?",fromDiscard);
                 // 1. If cards are out, ask VisualStore to handle the 'physical' cleanup
                 // if (discardedCards.length > 0) {
                 //     await visualStore.triggerFanUp();
@@ -247,7 +238,7 @@ export const useGameStore = create<GameStore>()(
                 state.local.selectedDiscardIds = [];
 
                 // Optional: Log for debugging during development
-                console.log("Selection cleared");
+                // console.log("Selection cleared");
             }),
 
             clearDiscardedCards: () => set((state) => {

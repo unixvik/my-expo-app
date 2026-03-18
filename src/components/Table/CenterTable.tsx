@@ -51,7 +51,7 @@ export function CenterTable() {
 // console.log(mainSlotRaw);
     const discardRef = useAnimatedRef<View>();
     const drawRef = useAnimatedRef<View>();
-// console.log(offsetSlotCards);
+console.log(offsetSlotCards);
 
     return (
         <View style={styles.centerTable}>
@@ -95,7 +95,7 @@ export function CenterTable() {
                         // const card = convertServerCardToUICard(cardRaw);
                         return (
                             <View key={i} style={[StyleSheet.absoluteFill, {
-                                transform: [{ translateX: layer.x }, { translateY: layer.y }, { rotateZ: `${layer.r}deg` }],
+                                // transform: [{ translateX: layer.x }, { translateY: layer.y }, { rotateZ: `${layer.r}deg` }],
                                 zIndex: i,
                             }]}>
                                 <CardFace cardId={cardRaw.id} />
@@ -117,14 +117,9 @@ export function CenterTable() {
                 {offsetSlotCards.length > 0 && (
 
                     offsetSlotCards.map((card, index) => {
-                        // console.log("Received card with error: ",card);
-                        // console.log("Flying cards:",flyingCards);
-                        // Skip if card is still in flight
                         const isFlying = flyingCards.some(f => f.card === card);
                         console.log(isFlying);
-                        // console.log(card);
                         if (isFlying) return null;
-
                         return (
                             <FannedCardItem
                                 key={`${card}-${index}`}
