@@ -17,12 +17,12 @@ import {
     TABLE_PERSPECTIVE,
     TABLE_TILT,
     getFanPosition,
-    DISCARD_OFFSET
+    DISCARD_OFFSET,
+    FLIGHT_DURATION,
 } from '@/state/constants';
 import { useResponsive } from '@/hooks/useResponsive';
 import { CardFace } from "@/components/Cards/CardFace";
 
-const FLIGHT_DURATION = 630;
 
 // Separate shadow component
 const FlyingCardShadow = ({ ghost, cardWidth, cardHeight, targetX, targetY, targetRotation, delay }: any) => {
@@ -97,7 +97,6 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
         );
     }, [delay, flightProgress, impactProgress, onDone]);
 
-    // ONLY animated properties belong in useAnimatedStyle
     const animatedCardStyle = useAnimatedStyle(() => {
         const p = flightProgress.value;
         const imp = impactProgress.value;
@@ -109,10 +108,6 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
         const squash = Math.sin(imp * Math.PI) * interpolate(imp, [0, 1], [0.12, 0]);
         const scaleX = (1 + squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]);
         const scaleY = (1 - squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]);
-        // Calculate velocity (change in progress)
-        const velocity = Math.abs(p - 0.5) * 2; // Peak at mid-flight
-        const blurAmount = interpolate(velocity, [0, 1], [0, 8]);
-
 
         return {
             transform: [
@@ -123,56 +118,57 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
                 { rotateZ: `${interpolate(p, [0, 1], [0, targetRotation]) + wobble}deg` },
                 { rotateX: `${arcMultiplier * 20}deg` },
             ],
-            // opacity: interpolate(p, [0, 0.85, 1], [1, 0.5, 0.8]),
-            // filter: `blur(${blurAmount}px)`, // Web only
+            // ✅ Fade out at end for crossfade
+            // opacity: interpolate(p, [0, 0.85, 1], [1, 1, 0]),
         };
     });
 
-    const animatedShadowStyle = useAnimatedStyle(() => {
+    // ✅ CSS drop-shadow filter (works in same transform space)
+    const cardContainerStyle = useAnimatedStyle(() => {
         const p = flightProgress.value;
         const arcMultiplier = Math.sin(p * Math.PI);
-        const shadowDrop = interpolate(arcMultiplier, [0, 1], [0, 30]);
+
+        // Dynamic shadow based on arc height
+        const shadowIntensity = interpolate(arcMultiplier, [0, 1], [0.3, 0.6]);
+        const shadowBlur = interpolate(arcMultiplier, [0, 1], [10, 25]);
+        const shadowOffsetY = interpolate(arcMultiplier, [0, 1], [5, 20]);
 
         return {
-            transform: [
-                { translateX: interpolate(p, [0, 1], [safeStartX, targetX]) + shadowDrop },
-                { translateY: interpolate(p, [0, 1], [safeStartY, targetY]) + shadowDrop },
-                { scale: interpolate(arcMultiplier, [0, 1], [1, 0.9]) },
-                { rotateZ: `${interpolate(p, [0, 1], [0, targetRotation])}deg` },
-            ],
-            opacity: interpolate(p, [0, 0.1, 0.9, 1], [0, 0.6, 0.3, 0]),
+            filter: `drop-shadow(0px ${shadowOffsetY}px ${shadowBlur}px rgba(0,0,0,${shadowIntensity}))`,
         };
     });
 
     return (
-        <>
-            <Animated.View
-                style={[
-                    { position: 'absolute', width: cardWidth, height: cardHeight, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 8 },
-                    animatedShadowStyle
-                ]}
-                pointerEvents="none"
+        <Animated.View
+            style={[
+                {
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: cardWidth,
+                    height: cardHeight,
+                },
+                animatedCardStyle,
+                // ✅ Use React Native shadow (stays with card in 3D space)
+                baseShadow,
+            ]}
+            pointerEvents="none"
+        >
+            <CardFace
+                cardId={ghost.card}
+                isFacedown={ghost.isFacedown}
+                style={{ width: '100%', height: '100%' }}
             />
-            <Animated.View
-                style={[
-                    { position: 'absolute', left: 0, top: 0, width: cardWidth, height: cardHeight, ...baseShadow }, // Static styles passed directly
-                    animatedCardStyle
-                ]}
-                pointerEvents="none"
-            >
-                <CardFace cardId={ghost.card} isFacedown={ghost.isFacedown} style={{ width: '100%', height: '100%' }} />
-            </Animated.View>
-        </>
+        </Animated.View>
     );
 };
-
 export const FlightOverlay = () => {
     const flyingCards = useVisualStore(s => s.flyingCards);
     const removeFlyingCard = useVisualStore(s => s.removeFlyingCard);
     const discardLayout = useVisualStore(s => s.layouts.discard);
     const completedRef = useRef(new Set<string>());
     const totalCardsRef = useRef(0);
-    const { scale } = useResponsive();
+    const { scale,moderateScale } = useResponsive();
 
     const cardWidth = scale(BASE_CARD_WIDTH);
     const cardHeight = cardWidth * CARD_ASPECT_RATIO;
@@ -229,8 +225,8 @@ export const FlightOverlay = () => {
                     const fanPos = getFanPosition(index);
                     const landingX = isDraw ? (ghost.endX || 0) : (discardLayout?.x+scale(10) || 0)+ fanPos.x;
                     // const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y - discardLayout?.y/2 +DISCARD_OFFSET.x|| 0) + fanPos.y;
-                    const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y-+DISCARD_OFFSET.y) -fanPos.y;
-                    const landingRotation = isDraw ? 0 : fanPos.rotation;
+                    const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y-scale(DISCARD_OFFSET.y*2));
+                    const landingRotation = isDraw ? 0 : scale(fanPos.rotation);
                     const delay = fanIndex * 20; // ✅ Use fanIndex for stagger
 
 

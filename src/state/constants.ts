@@ -13,6 +13,7 @@ export const TABLE_OVAL_RATIO  = 1.8;  // Aspect ratio of the table oval
 export const CARD_ATU_ROTATE_Z = "100deg";
 export const TABLE_TILT = 38;         // Degrees for 3D Perspective
 export const TABLE_PERSPECTIVE = 800;
+export const FLIGHT_DURATION = 630;   // ms — must match FlightOverlay
 
 // DISCARD OFFSET
 export const DISCARD_OFFSET = {
@@ -24,7 +25,7 @@ export const DISCARD_OFFSET = {
 // Shared fan position formula — used by both FannedCardItem and FlightOverlay
 // Returns offsets relative to the discard slot origin
 export const getFanPosition = (index: number) => ({
-    x: DISCARD_OFFSET.x + index * 20,
+    x: DISCARD_OFFSET.x + index * 10,
     y: DISCARD_OFFSET.y + index * 14,
     rotation: (index * 10) + 12,
 });

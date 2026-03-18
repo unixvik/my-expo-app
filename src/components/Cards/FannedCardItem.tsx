@@ -1,71 +1,82 @@
-import {BASE_CARD_WIDTH, getFanPosition} from "@/state/constants";
+import {getFanPosition} from "@/state/constants";
 import Animated, {
     Easing,
     useAnimatedStyle,
     useSharedValue,
     withDelay,
     withSpring,
-    withTiming
+    withTiming,
+    withSequence,
 } from "react-native-reanimated";
 import React from "react";
 import {CardFace} from "@/components/Cards/CardFace";
-import {useResponsive} from "@/hooks/useResponsive";
+
+// Random jitter helper
+const randomJitter = (base: number, range: number) => base + (Math.random() - 0.5) * range;
 
 // @ts-ignore
-export const FannedCardItem = ({card, index, isClosing, styles}) => {
+export const FannedCardItem = ({card, index, isClosing, styles}: any) => {
     const {x: fanX, y: fanY, rotation: fanRotation} = getFanPosition(index);
-    // console.log("FannedCardItem", card, index);
-    const { scale } = useResponsive();
-    const translateXScaled = scale(0);
-    // Initialize with spread value
-    const rotation = useSharedValue(fanRotation);
-    const translateX = useSharedValue(fanX+translateXScaled);
-    const translateY = useSharedValue(fanY);
-    const scaleX = useSharedValue(0.9); // Start small
-    // const opacity = useSharedValue(0); // ✅ Start invisible
 
-    // ✅ Fade in when mounted
+    // Jitter target — fixed per mount (card's resting position)
+    const jitteredRotation = React.useRef(randomJitter(fanRotation, 8)).current;
+    const jitteredX = React.useRef(randomJitter(fanX, 6)).current;
+    const jitteredY = React.useRef(randomJitter(fanY, 6)).current;
+
+    // Start at exact fan position, no jitter yet
+    const rotation = useSharedValue(fanRotation);
+    const translateX = useSharedValue(fanX);
+    const translateY = useSharedValue(fanY);
+    const scaleVal = useSharedValue(0.85);
+    const opacity = useSharedValue(0);
+
+    // On mount: fade in, scale up, then drift into jittered resting position
     React.useEffect(() => {
-        const delay = index * 20;
-        scaleX.value = withDelay(
-            delay,
-            withSpring(1, { damping: 8, stiffness: 1300 }) // Bouncy entrance
-        );
+        const stagger = index * 40;
+        opacity.value = withDelay(stagger, withTiming(1, { duration: 150 }));
+        scaleVal.value = withDelay(stagger, withSpring(1, { damping: 10, stiffness: 300 }));
+        rotation.value = withDelay(stagger + 80, withTiming(jitteredRotation, { duration: 250, easing: Easing.out(Easing.quad) }));
+        translateX.value = withDelay(stagger + 80, withTiming(jitteredX, { duration: 250, easing: Easing.out(Easing.quad) }));
+        translateY.value = withDelay(stagger + 80, withTiming(jitteredY, { duration: 250, easing: Easing.out(Easing.quad) }));
     }, []);
 
-
-    // Watch the isClosing prop to trigger "Suck back into pile" animation
+    // ✅ Closing animation with jitter wobble
     React.useEffect(() => {
         if (isClosing) {
             const config = {duration: 350, easing: Easing.out(Easing.quad)};
-            rotation.value = withTiming(0, config);
+
+            // Add a little jitter wobble before settling
+            rotation.value = withSequence(
+                withTiming(jitteredRotation + 5, { duration: 100 }),
+                withTiming(jitteredRotation - 3, { duration: 100 }),
+                withTiming(0, config) // Final settle
+            );
+
             translateX.value = withTiming(0, config);
             translateY.value = withTiming(0, config);
-
+            // opacity.value = withTiming(0, config);
         }
-    }, [isClosing]);
+    }, [isClosing, jitteredRotation]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         position: 'absolute',
         left: translateX.value,
         top: translateY.value,
-
+        opacity: opacity.value,
         zIndex: 10 + index,
         elevation: 10 + index,
         transform: [
             {rotateZ: `${rotation.value}deg`},
-            {scale: scaleX.value}, // ✅ Add scale
+            {scale: scaleVal.value},
         ],
-
         ...styles.cardSlotDraw
     }));
-    // console.log("[BEFORE RETURN]FannedCardItem", card, index);
+
     return (
         <Animated.View style={animatedStyle} pointerEvents="none">
             <CardFace
                 cardId={card}
                 isFacedown={false}
-                // cardWidth={BASE_CARD_WIDTH}
                 style={styles.tableCardArtwork}
             />
         </Animated.View>

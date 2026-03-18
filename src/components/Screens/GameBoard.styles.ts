@@ -176,15 +176,16 @@ export const createStyles = (
             // zIndex:100,
             ...rnShadow("heavy"),
         },
-        slotLabel: {
-            fontSize: moderateScale(8),
-            fontWeight: "800",
-            opacity: 0.8,
-            // position: "absolute",
-            // overflow: "visible",
-            top: -scale(15),
-            color: theme.text.primary,
-        },
+        // slotLabel: {
+        //     fontSize: moderateScale(8),
+        //     fontWeight: "800",
+        //     opacity: 0.8,
+        //
+        //     // position: "absolute",
+        //     // overflow: "visible",
+        //     top: -scale(15),
+        //     color: theme.text.primary,
+        // },
 
         atuSlot: {
             position: "absolute",
@@ -201,12 +202,39 @@ export const createStyles = (
             borderColor: theme.accent,
             borderWidth: scale(2),
             zIndex: Z_INDEX.PILES,
-            // width: "100%",
-            // transform: [{translateY: -40}],
-            width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
-            height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
+            alignItems: "center",
+            justifyContent: "center",
+            alignSelf: "center",
+            width: scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO) + scale(20),
+            height: scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO + scale(20),
+            borderRadius: 10,
+            position: 'relative', // Ensure children absolute to this
         },
-
+        cardContainer: {
+            // This container matches the parent size and centers its children
+            ...StyleSheet.absoluteFillObject,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        absoluteCenter: {
+            position: 'absolute',
+            // By NOT using absoluteFill here, the View wraps the CardFace size
+            // and is centered by the parent's flex rules
+        },
+        centerContent: {
+            justifyContent: 'center',
+            alignItems: 'center',
+            transform: [
+                {translateX: 10,
+                },
+            ],
+            zIndex: Z_INDEX.CARD_PORTAL
+        },
+        slotLabel: {
+            position: 'absolute',
+            top: "-40%",
+            zIndex: 0, // Keep label above cards
+        },
         playerZone: {
             position: "absolute",
             bottom: "5%",

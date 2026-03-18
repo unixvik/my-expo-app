@@ -32,7 +32,7 @@ export function CenterTable() {
     const atuCard = useGameStore((s) => s.server.atuCard);
     const cardsRemaining = useGameStore((s) => s.server.cardsRemaining);
     const cardsDiscarded = useGameStore((s) => s.server.cardsDiscarded);
-// console.log(atuCard[0].id);
+
     const {drawCards} = useGameActions();
     const mandatoryDraw = useAwaitingDraw();
 
@@ -42,16 +42,21 @@ export function CenterTable() {
 
     // Computed Values
     const mainSlotRaw = heldTopDiscardRaw || (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
-    // const mainSlotCard = mainSlotRaw ? convertServerCardToUICard(mainSlotRaw) : null;
-    // const offsetSlotCards = useMemo(() => parseStringCardsToUI(offsetSlotCardX), [offsetSlotCardX]);
-    // const atuCardConverted = useMemo(() =>
-    //         atuCard && atuCard.length > 0 ? convertServerCardToUICard(atuCard[0]) : null,
-    //     [atuCard]
-    // );
-// console.log(mainSlotRaw);
+
     const discardRef = useAnimatedRef<View>();
     const drawRef = useAnimatedRef<View>();
 
+    // Accumulate jitter per pile slot — only add new entries, never regenerate existing ones
+    const jitterCache = React.useRef<Array<{ x: number; y: number; r: number }>>([]);
+    const needed = Math.min(Math.max(cardsDiscarded - 1, 0), 5);
+    while (jitterCache.current.length < needed) {
+        jitterCache.current.push({
+            x: (Math.random() - 0.5) * 12,
+            y: (Math.random() - 0.5) * -10,
+            r: (Math.random() - 0.5) * 20,
+        });
+    }
+    const pileLayersWithJitter = jitterCache.current.slice(0, needed).map((j, i) => ({ ...j, index: i }));
 
     return (
         <View style={styles.centerTable}>
@@ -76,34 +81,40 @@ export function CenterTable() {
 
             {/* DISCARD PILE */}
             <TouchableOpacity
-
                 style={[styles.discardSlot]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(true)}
             >
                 <AppText style={styles.slotLabel}>DISCARD</AppText>
 
-                {/* Card stack: pile layers + top card in a shared relative container */}
-                <View style={{flex: 1, width: '100%'}}>
-                    {/* Pile depth — only visible once more than 1 card has been discarded */}
-                    {cardsDiscarded > 1 && PILE_LAYERS.map((layer, i) => {
+                {/* 1. Shared Container for Pile & Top Card */}
+                {/* Removed flex: 1 to prevent it from fighting the absolute children */}
+                <View style={styles.cardContainer}>
 
-                        const cardRaw = discardPile[discardPile.length - 2 - i];
-
+                    {/* ✅ Pile depth simulation */}
+                    {pileLayersWithJitter.map((layer) => {
+                        const cardRaw = discardPile[discardPile.length - 2 - layer.index];
                         if (!cardRaw) return null;
-                        // const card = convertServerCardToUICard(cardRaw);
+
                         return (
-                            <View key={i} style={[StyleSheet.absoluteFill, {
-                                // transform: [{ translateX: layer.x }, { translateY: layer.y }, { rotateZ: `${layer.r}deg` }],
-                                zIndex: i,
-                            }]}>
+                            <View
+                                key={`pile-${layer.index}`}
+                                style={[styles.absoluteCenter, {
+                                    transform: [
+                                        { translateX: layer.x },
+                                        { translateY: layer.y },
+                                        { rotateZ: `${layer.r}deg` }
+                                    ],
+                                    zIndex: layer.index,
+                                }]}
+                            >
                                 <CardFace cardId={cardRaw.id}/>
                             </View>
                         );
                     })}
 
                     {/* Top card */}
-                    <View style={[StyleSheet.absoluteFill, {zIndex: 10}]}>
+                    <View style={[styles.absoluteCenter, { zIndex: 10 }]}>
                         {mainSlotRaw ? (
                             <CardFace cardId={mainSlotRaw.id}/>
                         ) : (
@@ -111,27 +122,34 @@ export function CenterTable() {
                         )}
                     </View>
                 </View>
-                <View style={{flex:1, width:"100%",height:"100%", position: "absolute" }} ref={discardRef}
-                      onLayout={() => updateLayout('discard', discardRef, 1)}>
-                    {/* FANNED DISCARD CARDS */}
-                    {offsetSlotCards.length > 0 && (
 
-                        offsetSlotCards.map((card, index) => {
-                            const isFlying = flyingCards.some(f => f.card === card);
+                {/* ✅ Fanned cards overlay */}
+                {/* Added pointerEvents="none" if you only want the main slot to be touchable */}
+                <View
+                    style={[StyleSheet.absoluteFill, styles.centerContent]}
+                    ref={discardRef}
+                    onLayout={() => updateLayout('discard', discardRef, 1)}
+                    pointerEvents="box-none"
+                >
+                    {offsetSlotCards.length > 0 && offsetSlotCards.map((card, index) => {
+                        const isFlying = flyingCards.some(f => {
+                            const flyId = typeof f.card === 'string' ? f.card : (f.card as any)?.id;
+                            return flyId === card;
+                        });
 
-                            if (isFlying) return null;
-                            return (
-                                <FannedCardItem
+                        if (isFlying) return null;
 
-                                    key={`${card}-${index}`}
-                                    card={card}
-                                    index={index}
-                                    isClosing={isClosingFan}
-                                    // scale={10}
-                                    styles={styles}/>
-                            );
-                        })
-                    )}
+                        return (
+                            <FannedCardItem
+                                key={`${card}-${index}`}
+                                card={card}
+                                index={index}
+                                isClosing={isClosingFan}
+                                isFlying={isFlying}
+                                styles={styles}
+                            />
+                        );
+                    })}
                 </View>
             </TouchableOpacity>
         </View>
