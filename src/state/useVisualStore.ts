@@ -9,7 +9,16 @@ type ElementLayout = {
     height: number;
 };
 
-
+export interface FlyingCard {
+    id: string;
+    card?: string; // Be sure to pass the parsed object here, not the string!
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    isFacedown?: boolean;
+    type?: 'discard' | 'draw';
+}
 
 
 interface VisualStore {
@@ -17,13 +26,14 @@ interface VisualStore {
     visualHand: CardData[];
     isClosingFan: boolean;
     // Ghost cards are temporary clones used strictly for flying animations
-    flyingCards: { id: string; card: CardData; startX: number; startY: number; endX: number; endY: number }[];
-
     // Anchors
+
+    flyingCards: FlyingCard[];
+
     layouts: {
         deck: ElementLayout | null;
         discard: ElementLayout | null;
-        opponents: Record<string, Record<string, ElementLayout>>; // opponentId -> cardId -> layout
+        opponents: Record<string, ElementLayout>; // opponentId -> layout (avatar position)
         player: Record<string, ElementLayout>; // cardId -> layout
     }
 
@@ -40,7 +50,7 @@ interface VisualStore {
     addCardToVisualHand: (card: CardData) => void;
     removeCardFromVisualHand: (cardId: string) => void;
 
-    spawnFlyingCard: (ghost: any) => void;
+    spawnFlyingCard: (ghost: FlyingCard) => void;
     removeFlyingCard: (id: string) => void;
 
     triggerFanUp(): void;

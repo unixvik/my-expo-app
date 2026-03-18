@@ -35,10 +35,10 @@ export const discardLayoutToScene = (layout: { x: number, y: number, width: numb
 };
 
 export const getFanTransform = (index: number) => {
-    const fanSpacing = 20;
-    const fanRotation = 12 + index * 8;
+    const fanSpacing = 1;
+    const fanRotation = 1 + index * 1;
     const fanX = index * fanSpacing;
-    const fanY = -index * 2;
+    const fanY = -10 ;
 
     return { x: fanX, y: fanY, rotation: fanRotation };
 };

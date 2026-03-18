@@ -11,10 +11,11 @@ import Animated, {
     Extrapolation,
 } from 'react-native-reanimated';
 import { useVisualStore } from '@/state/useVisualStore';
-import { GameCard } from '@/components/Cards/GameCard';
 import {BASE_CARD_WIDTH, CARD_ASPECT_RATIO, rnShadow, TABLE_PERSPECTIVE, TABLE_TILT} from '@/state/constants';
 import { useResponsive } from '@/hooks/useResponsive';
-import { getFanTransform, getSceneTransform, discardLayoutToScene, getFlightYOffset } from '@/utils/helpers';
+import { getSceneTransform, getFlightYOffset } from '@/utils/helpers';
+import { DISCARD_OFFSET } from '@/state/constants';
+import {CardFace} from "@/components/Cards/CardFace";
 
 const FLIGHT_DURATION = 630;
 
@@ -66,6 +67,7 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
     const impactProgress = useSharedValue(0);
     const arcOffsetY = getFlightYOffset();
     const baseShadow = rnShadow("heavy");
+    // console.log("Ghost card:",ghost.card);
     useEffect(() => {
         flightProgress.value = withDelay(
             delay,
@@ -98,6 +100,9 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
         const scaleY = (1 - squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]);
 
         return {
+            position: 'absolute',
+            left: 0,
+            top: 0,
             width: cardWidth,
             height: cardHeight,
             shadowColor: baseShadow.shadowColor,
@@ -141,7 +146,7 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
             {/* Shadow is rendered BEFORE the card, so it's always UNDER in the local stack */}
             <Animated.View style={shadowStyle} pointerEvents="none" />
             <Animated.View style={cardStyle} pointerEvents="none">
-                <GameCard card={ghost.card} style={{ width: '100%', height: '100%' }} />
+                <CardFace cardId={ghost.card} isFacedown={ghost.isFacedown} style={{ width: '100%', height: '100%' }} />
             </Animated.View>
         </>
     );
@@ -199,38 +204,17 @@ export const FlightOverlay = () => {
 
     if (!discardLayout || flyingCards.length === 0) return null;
 
-    const discardCenterScene = discardLayoutToScene(discardLayout);
-
     return (
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { zIndex: 99999 }]}>
             <Animated.View style={containerStyle}>
-                {/* Render all shadows FIRST (bottom layer) */}
-                {/*{flyingCards.map((ghost, index) => {*/}
-                {/*    const { x: fanX, y: fanY, rotation: fanRotation } = getFanTransform(index);*/}
-                {/*    const landingX = discardCenterScene.x + fanX;*/}
-                {/*    const landingY = discardCenterScene.y + fanY;*/}
-                {/*    const delay = index * 120;*/}
-
-                {/*    return (*/}
-                {/*        <FlyingCardShadow*/}
-                {/*            key={`shadow-${ghost.id}`}*/}
-                {/*            ghost={ghost}*/}
-                {/*            cardWidth={cardWidth}*/}
-                {/*            cardHeight={cardHeight}*/}
-                {/*            targetX={landingX}*/}
-                {/*            targetY={landingY}*/}
-                {/*            targetRotation={fanRotation}*/}
-                {/*            delay={delay}*/}
-                {/*        />*/}
-                {/*    );*/}
-                {/*})}*/}
-
-                {/* Render all cards SECOND (top layer) */}
                 {flyingCards.map((ghost, index) => {
-                    const { x: fanX, y: fanY, rotation: fanRotation } = getFanTransform(index);
-                    const landingX = discardCenterScene.x + fanX;
-                    const landingY = discardCenterScene.y + fanY;
-                    const delay = index * 120;
+                    const isDraw = ghost.type === 'draw';
+                    // Draw: fly to the ghost's own endpoint (opponent avatar)
+                    // Discard: land exactly where FannedCardItem renders
+                    const landingX = isDraw ? ghost.endX : discardLayout.x + DISCARD_OFFSET.x + (index * 5);
+                    const landingY = isDraw ? ghost.endY : discardLayout.y + DISCARD_OFFSET.y - (index * 22);
+                    const landingRotation = isDraw ? 0 : (index * 8) + 12;
+                    const delay = index * 20;
 
                     return (
                         <FlyingCardItem
@@ -240,7 +224,7 @@ export const FlightOverlay = () => {
                             cardHeight={cardHeight}
                             targetX={landingX}
                             targetY={landingY}
-                            targetRotation={fanRotation}
+                            targetRotation={landingRotation}
                             delay={delay}
                             onDone={() => handleCardDone(ghost.id)}
                         />

@@ -2,10 +2,8 @@ import {useAppStyles} from "@/hooks/useAppStyles";
 import {useGameStore} from "@/state/useGameStore";
 import {View} from "react-native";
 import {AppText} from "@/Common/AppText";
-import {useAnimatedRef} from "react-native-reanimated";
-import {updateLayout} from "@/utils/helpers";
-
-
+import {useRef, useEffect} from "react";
+import {registerOpponentRef} from "@/utils/opponentRefs";
 
 interface OpponentInterface{
     playerId: string;
@@ -14,20 +12,21 @@ interface OpponentInterface{
 function OpponentAvatar({ playerId, seat }:OpponentInterface) {
     const { theme, styles } = useAppStyles();
 
-    // SELECTOR CRITIC: Ascultă DOAR acest jucător
     const player = useGameStore((s) => s.server.players[playerId]);
     const isTheirTurn = useGameStore((s) => s.server.currentTurn === playerId);
 
-    const opponentRef = useAnimatedRef<View>();
+    const opponentRef = useRef<View>(null);
 
-
+    useEffect(() => {
+        registerOpponentRef(playerId, opponentRef);
+    }, [playerId]);
 
     if (!player) return null;
 
     const seatStyle = styles[`seat_${seat}` as keyof typeof styles];
 
     return (
-        <View style={[styles.opponentAnchor, seatStyle]}>
+        <View ref={opponentRef} style={[styles.opponentAnchor, seatStyle]}>
             <View style={[
                 styles.avatarRing,
                 { borderColor: isTheirTurn ? theme.accent : theme.surface }

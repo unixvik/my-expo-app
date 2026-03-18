@@ -7,7 +7,7 @@
 export const CARD_ASPECT_RATIO = 1.45; // Height / Width
 export const CARD_RADIUS_RATIO = 0.2;  // Radius / Width
 export const CARD_PLAYER_SCALE_RATIO = 1.3;
-export const BASE_CARD_WIDTH   = 45;   // Design-unit width of center/table cards
+export const BASE_CARD_WIDTH   = 50;   // Design-unit width of center/table cards
 export const PLAYER_CARD_WIDTH = 40;   // Design-unit width of hand cards
 export const TABLE_OVAL_RATIO  = 1.8;  // Aspect ratio of the table oval
 export const CARD_ATU_ROTATE_Z = "100deg";

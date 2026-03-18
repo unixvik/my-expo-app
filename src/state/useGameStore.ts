@@ -126,20 +126,35 @@ export const useGameStore = create<GameStore>()(
                 state.isInitialStateSynced = synced;
             }),
 
-            syncServerState: (newState) => set((state) => {
-                // @ts-ignore
-                const wasMyTurn = state.server.currentTurn === state.conn.sessionId;
-                // @ts-ignore
-                const isNowMyTurn = newState.currentTurn === state.conn.sessionId;
+            syncServerState: (newState) => {
+                const current = get();
+                const wasMyTurn = current.server.currentTurn === (current.conn as any).sessionId;
+                const isNowMyTurn = newState.currentTurn === (current.conn as any).sessionId;
+                const turnChanged = current.server.currentTurn !== newState.currentTurn;
 
-                // If my turn just ended, clear any lingering highlights
-                if (wasMyTurn && !isNowMyTurn) {
-                    state.local.selectedDiscardIds = [];
-                    state.local.discardedCards = [];
+                set((state) => {
+                    if (wasMyTurn && !isNowMyTurn) {
+                        state.local.selectedDiscardIds = [];
+                    }
+                    // If fanned cards are showing, keep them until the animation clears them below
+                    if (turnChanged && current.local.discardedCards.length === 0) {
+                        state.local.heldTopDiscard = null;
+                    }
+                    state.server = newState;
+                    state.isInitialStateSynced = true;
+                });
+
+                // When the turn changes and fanned cards are visible, animate them closed
+                // then clear — mirrors the await triggerFanUp() in the player's drawCards action
+                if (turnChanged && current.local.discardedCards.length > 0) {
+                    useVisualStore.getState().triggerFanUp().then(() => {
+                        set((state) => {
+                            state.local.discardedCards = [];
+                            state.local.heldTopDiscard = null;
+                        });
+                    });
                 }
-                state.server = newState;
-                state.isInitialStateSynced = true;
-            }),
+            },
 
 
             selectCard: (cardId) => set((state) => {
@@ -183,13 +198,11 @@ export const useGameStore = create<GameStore>()(
                 const visualStore = useVisualStore.getState();
 
                 // 1. If cards are out, ask VisualStore to handle the 'physical' cleanup
-                if (discardedCards.length > 0) {
-                    await visualStore.triggerFanUp();
-                }
+                // if (discardedCards.length > 0) {
+                //     await visualStore.triggerFanUp();
+                // }
 
-                // 2. Game logic proceeds
-                globalRoom?.send("drawCard", {fromDiscard});
-
+                globalRoom?.send("drawCard",fromDiscard);
                 set((state) => {
                     state.local.heldTopDiscard = null;
 

@@ -173,6 +173,7 @@ export const createStyles = (
             borderRadius: scale(8),
             backgroundColor: theme.cards.cardFront.backgroundColor, // Gives the facedown deck a solid base
             overflow: 'hidden',
+            // zIndex:100,
             ...rnShadow("heavy"),
         },
         slotLabel: {

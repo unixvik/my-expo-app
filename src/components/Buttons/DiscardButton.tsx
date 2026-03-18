@@ -38,7 +38,7 @@ export const DiscardButton = ({ styles, myId, hand }: DiscardButtonProps) => {
                 onPress={() => {
 
                     if (discardLayout) {
-                        console.log(discardLayout);
+                        // console.log(discardLayout);
                         spawnDiscardFlight({
                             selectedDiscardIds,
                             hand: hand,

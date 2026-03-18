@@ -1,6 +1,4 @@
-import { Platform } from 'react-native';
 import {convertServerCardToUICard, parseStringCardToUI} from '@/utils/suitHelper';
-import {useGameStore} from "@/state/useGameStore";
 import {DISCARD_OFFSET} from "@/state/constants";
 
 export function spawnDiscardFlight({
@@ -9,32 +7,31 @@ export function spawnDiscardFlight({
     handPositions,
     discardLayout,
     spawnFlyingCard,
+    isFacedown = false,
 }: {
     selectedDiscardIds: string[];
     hand: any[];
     handPositions: Record<string, { x: number; y: number }>;
     discardLayout: { x: number; y: number; width: number; height: number };
     spawnFlyingCard: (ghost: any) => void;
+    isFacedown?: boolean;
 }) {
-    // if (Platform.OS !== 'web') return;
-
     const endX = discardLayout.x + (discardLayout.width / 2) + DISCARD_OFFSET.x;
     const endY = discardLayout.y + (discardLayout.height / 2) + DISCARD_OFFSET.y;
-
-    // const selectedDiscardIds = useGameStore((s) => s.local.selectedDiscardIds || []);
+// console.log(isFacedown);
     selectedDiscardIds.forEach(cardId => {
-        console.log(cardId);
         const pos = handPositions[cardId];
-        const rawCard = hand.find(c => c.id === cardId);
+        // console.log(cardId);
         if (pos) {
-            // console.log("Fly baby");
             spawnFlyingCard({
                 id: `${cardId}_fly`,
-                card: parseStringCardToUI(cardId),
+                card: cardId,
                 startX: pos.x,
                 startY: pos.y,
                 endX,
                 endY,
+                isFacedown,
+                type: 'discard',
             });
         }
     });

@@ -44,6 +44,7 @@ export function PlayerLayer() {
             me?.hand?.map(c => convertServerCardToUICard(c).id) || [],
         [me?.hand]
     );
+    // console.log(cardIds);
 
     // ✅ Only create gestures on mobile platforms
     const isWeb = Platform.OS === 'web';
@@ -118,16 +119,17 @@ export function PlayerLayer() {
                 <Avatar />
 
                 <HandContainer >
-                    {me?.hand?.map((rawCard, index) => {
-                        const card = convertServerCardToUICard(rawCard);
-                        const isSelected = selectedDiscardIds.some(c => c === card.id);
+                    {/*{me?.hand?.map((rawCard, index) => {*/}
+                    {cardIds.map((cardId,index) => {
+                        // const card = convertServerCardToUICard(rawCard);
+                        const isSelected = selectedDiscardIds.some(c => c === cardId);
 
                         return (
                             <AnimatedHandCard
-                                key={card.id}
-                                card={card}
+                                key={cardId}
+                                card={cardId}
                                 index={index}
-                                totalCards={me.hand.length}
+                                totalCards={cardIds.length}
                                 cardWidth={PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO} // Only for fan math
                                 isSelected={isSelected}
                                 hoveredCardId={hoveredCardId}

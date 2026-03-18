@@ -46,20 +46,20 @@ export const calculateCardFan = (
 };
 
 
-export const createDiscardAnimation = (playerId: string, cardIds: string[]
-
-) => {
-
-    console.log(playerId);
-    const selectedDiscardIds = cardIds;
-    console.log(handPositions);
-    // spawnDiscardFlight({
-    //     selectedDiscardIds,
-    //     hand: [],
-    //     handPositions,
-    //     discardLayout,
-    //     spawnFlyingCard
-    // });
-
-
-};
+// export const createDiscardAnimation = (playerId: string, cardIds: string[]
+//
+// ) => {
+//
+//     // console.log(playerId);
+//     // const selectedDiscardIds = cardIds;
+//     // console.log(handPositions);
+//     // spawnDiscardFlight({
+//     //     selectedDiscardIds,
+//     //     hand: [],
+//     //     handPositions,
+//     //     discardLayout,
+//     //     spawnFlyingCard
+//     // });
+// console.log("nimic")
+//
+// };

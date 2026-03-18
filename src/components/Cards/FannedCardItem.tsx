@@ -1,15 +1,16 @@
 import {BASE_CARD_WIDTH, DISCARD_OFFSET} from "@/state/constants";
 import Animated, {Easing, useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated";
 import React from "react";
-import {GameCard} from "@/components/Cards/GameCard";
+import {CardFace} from "@/components/Cards/CardFace";
+// import {GameCard} from "@/components/Cards/GameCard";
 
 // @ts-ignore
 export const FannedCardItem = ({ card, index, isClosing, scale, styles }) => {
     // Current fan spread positions
     const fanRotation = (index * 8) + 12;
-    const fanX = (DISCARD_OFFSET.x + (index * 20));
-    const fanY = (DISCARD_OFFSET.y - (index * 2));
-
+    const fanX = (DISCARD_OFFSET.x + (index * 5));
+    const fanY = (DISCARD_OFFSET.y - (index * 22));
+    // console.log("FannedCardItem", card, index);
     // Initialize with spread values
     const rotation = useSharedValue(fanRotation);
     const translateX = useSharedValue(fanX);
@@ -33,14 +34,15 @@ export const FannedCardItem = ({ card, index, isClosing, scale, styles }) => {
         zIndex: 10 + index,
         elevation: 10 + index,
 
-        ...styles.cardSlot
+        ...styles.cardSlotDraw
     }));
-
+    // console.log("[BEFORE RETURN]FannedCardItem", card, index);
     return (
         <Animated.View style={animatedStyle} pointerEvents="none">
-            <GameCard
-                card={card}
-                cardWidth={BASE_CARD_WIDTH}
+            <CardFace
+                cardId={card}
+                isFacedown={false}
+                // cardWidth={BASE_CARD_WIDTH}
                 style={styles.tableCardArtwork}
             />
         </Animated.View>

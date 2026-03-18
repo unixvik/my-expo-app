@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import React, {useMemo} from 'react';
+import {Platform, StyleSheet, View} from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -9,16 +9,16 @@ import Animated, {
     useDerivedValue,
     SharedValue,
 } from 'react-native-reanimated';
-import { CardFace } from './CardFace';
-import { calculateCardFan } from '@/utils/animations';
-import { useTheme } from "@/hooks/useTheme";
-import { useResponsive } from "@/hooks/useResponsive";
-import { createStyles } from "@/components/Screens/GameBoard.styles";
-import { updateLayout } from "@/utils/helpers";
-import { Pressable } from "react-native-gesture-handler";
+import {CardFace} from './CardFace';
+import {calculateCardFan} from '@/utils/animations';
+import {useTheme} from "@/hooks/useTheme";
+import {useResponsive} from "@/hooks/useResponsive";
+import {createStyles} from "@/components/Screens/GameBoard.styles";
+import {updateLayout} from "@/utils/helpers";
+import {Pressable} from "react-native-gesture-handler";
 
 interface AnimatedHandCardProps {
-    card: any;
+    card: string;
     index: number;
     totalCards: number;
     cardWidth: number;
@@ -38,24 +38,24 @@ export const AnimatedHandCard = ({
                                  }: AnimatedHandCardProps) => {
 
     const theme = useTheme();
-    const { scale, moderateScale, isLandscape } = useResponsive();
+    const {scale, moderateScale, isLandscape} = useResponsive();
     const styles = useMemo(() => createStyles(theme, scale, moderateScale, isLandscape), [theme, scale, isLandscape]);
 
     const isMouseHovered = useSharedValue(false);
     const isSelectedSV = useSharedValue(isSelected);
     const playerRef = useAnimatedRef<View>();
-
+// console.log("Animated hand card", card); // is ok: Animated hand card diamonds-J-0
     React.useEffect(() => {
         // 🌟 Trigger a fun "pop" animation when selection changes
         if (isSelected) {
             // Overshoot then settle - feels playful but controlled
             isSelectedSV.value = withSequence(
-                withSpring(1.15, { damping: 8, stiffness: 300 }), // Quick pop
-                withSpring(1, { damping: 12, stiffness: 200 })     // Settle back
+                withSpring(1.15, {damping: 8, stiffness: 300}), // Quick pop
+                withSpring(1, {damping: 12, stiffness: 200})     // Settle back
             );
         } else {
             // Smooth deselection
-            isSelectedSV.value = withSpring(0, { damping: 15, stiffness: 180 });
+            isSelectedSV.value = withSpring(0, {damping: 15, stiffness: 180});
         }
     }, [isSelected]);
 
@@ -63,7 +63,7 @@ export const AnimatedHandCard = ({
         return isMouseHovered.value || hoveredCardId.value === card.id;
     });
 
-    const springConfig = { damping: 14, stiffness: 150, mass: 0.8 };
+    const springConfig = {damping: 14, stiffness: 150, mass: 0.8};
 
     const animatedStyle = useAnimatedStyle(() => {
         const target = calculateCardFan(index, totalCards, cardWidth, isSelected, isActive.value);
@@ -79,10 +79,10 @@ export const AnimatedHandCard = ({
 
         return {
             transform: [
-                { translateX: withSpring(target.translateX, springConfig) },
-                { translateY: withSpring(target.translateY + (isActive.value ? -20 : 0), springConfig) },
-                { rotateZ: withSpring(`${target.rotateZ}deg`, springConfig) },
-                { scale: finalScale } // No spring here - isSelectedSV already animated
+                {translateX: withSpring(target.translateX, springConfig)},
+                {translateY: withSpring(target.translateY + (isActive.value ? -20 : 0), springConfig)},
+                {rotateZ: withSpring(`${target.rotateZ}deg`, springConfig)},
+                {scale: finalScale} // No spring here - isSelectedSV already animated
             ],
             zIndex: isSelected || isActive.value ? 100 : index,
         };
@@ -94,7 +94,7 @@ export const AnimatedHandCard = ({
 
         return {
             // Dramatic shadow increase
-            elevation: withSpring(isSelected ? 24 : 8, { damping: 15, stiffness: 200 }),
+            elevation: withSpring(isSelected ? 24 : 8, {damping: 15, stiffness: 200}),
             shadowOpacity: 0.3 + (glowIntensity * 0.3), // 0.3 → 0.6
             shadowRadius: 6 + (glowIntensity * 10),      // 6 → 16
             shadowColor: isSelected ? theme.cards.selectedBorder : '#000',
@@ -108,16 +108,20 @@ export const AnimatedHandCard = ({
         <Animated.View style={[styles.playerCardWrapper, animatedStyle, selectionGlowStyle]}>
             <Pressable
                 ref={playerRef}
-                onLayout={() => updateLayout('player', playerRef, card.id)}
+                onLayout={() => updateLayout('player', playerRef, card)}
                 onPressOut={Platform.OS === 'web' ? () => {
-                    onToggleSelect(card.id)
+                    onToggleSelect(card)
                 } : undefined}
                 style={StyleSheet.absoluteFill}
-                onMouseEnter={() => { isMouseHovered.value = true; }}
-                onMouseLeave={() => { isMouseHovered.value = false; }}
+                onMouseEnter={() => {
+                    isMouseHovered.value = true;
+                }}
+                onMouseLeave={() => {
+                    isMouseHovered.value = false;
+                }}
             >
                 <CardFace
-                    card={card}
+                    cardId={card}
                     isSelected={isSelected}
                 />
             </Pressable>

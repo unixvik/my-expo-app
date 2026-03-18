@@ -63,7 +63,7 @@ const DebugFlightSpawner = () => {
         };
 
         // spawnFlyingCard(flightData);
-console.log("Spaewn!");
+// console.log("Spaewn!");
         //test
         spawnDiscardFlight({
             selectedDiscardIds,

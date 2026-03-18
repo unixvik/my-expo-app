@@ -3,6 +3,7 @@ import {useRoomConnection} from "@/hooks/useRoomConnection";
 import {ScrollView,StyleSheet,Text} from "react-native";
 import {useGameStore} from "@/state/useGameStore";
 import {useAwaitingDraw, useSelf} from "@/state/gameSelectors";
+import {convertServerCardToUICard} from "@/utils/suitHelper";
 
 export const GameStatusOverlay = memo(function GameStatusOverlay() {
     // const { conn, room, connect, disconnect } = useRoomConnection();
@@ -19,6 +20,14 @@ export const GameStatusOverlay = memo(function GameStatusOverlay() {
     // 2. Grab Player list from Server Truth
     const players = useGameStore((s) => s.server.players);
     const playerEntries = Object.values(players);
+
+    // rubbish
+    const discardPile = useGameStore((s) => s.server.discardPile);
+    const heldTopDiscardRaw = useGameStore((s) => s.local.heldTopDiscard);
+    const mainSlotRaw = heldTopDiscardRaw || (discardPile.length > 0 ? discardPile[discardPile.length - 1] : null);
+    const mainSlotCard = mainSlotRaw ? convertServerCardToUICard(mainSlotRaw) : null;
+    const offsetSlotCard = useGameStore((s) => s.local.discardedCards);
+    // console.log("mainSlot raw: ",mainSlotRaw);
     return(
         <ScrollView  style={hud.wrap}>
 
@@ -31,7 +40,9 @@ export const GameStatusOverlay = memo(function GameStatusOverlay() {
             <Text style={hud.row}><Text style={hud.k}>Is Synced?:</Text> {String(isSynced)}</Text>
             <Text style={hud.row}><Text style={hud.k}>Player Key:</Text> {String(playerKey)}</Text>
             <Text style={hud.title}>---</Text>
-            <Text style={hud.row}><Text style={hud.k}>mandatoryDraw:</Text> {String(mandatoryDraw)}</Text>
+            <Text style={hud.row}><Text style={hud.k}>mainSlotRaw:</Text> {String(mainSlotRaw.id)}</Text>
+            <Text style={hud.row}><Text style={hud.k}>offsetSlotCard:</Text> {String(offsetSlotCard)}</Text>
+            <Text style={hud.row}><Text style={hud.k}>offsetSlotCard.length:</Text> {String(offsetSlotCard.length)}</Text>
 
         </ScrollView>
             );

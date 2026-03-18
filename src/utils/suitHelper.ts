@@ -44,7 +44,7 @@ export function parseStringCardsToUI(cardStrings: string[]): CardData[] {
 
     return cardStrings.map(cardStr => parseStringCardToUI(cardStr));
 }
-export function parseStringCardToUI(cardInput: string | string[]): CardData {
+export function parseStringCardToUI(cardInput: string): CardData {
     // 1. Handle array input if necessary
     const rawString = Array.isArray(cardInput) ? cardInput[0] : cardInput;
 
@@ -52,8 +52,9 @@ export function parseStringCardToUI(cardInput: string | string[]): CardData {
         return { suit: '?', rank: '?', value: 0, id: 'unknown' };
     }
 
-    // 2. Split the string (hearts-5-0 -> ["hearts", "5", "0"])
-    const [suit, rank, id] = rawString.split('-');
+    // 2. Split the string (hearts-5-0 -> ["hearts", "5", "hearts-5-0"])
+    const [suit, rank] = rawString.split('-');
+    const id = rawString;
 
     // 3. Return the mapped object using your existing conversion logic
     return {
@@ -65,4 +66,23 @@ export function parseStringCardToUI(cardInput: string | string[]): CardData {
     };
 
 
+
+}
+export function parseUICardToString(card: CardData): string {
+    // 1. Null safety check
+    if (!card) return 'unknown';
+
+    // 2. The Fast Path: Since the `id` IS the original string,
+    // returning it directly gives you O(1) performance.
+    if (card.id && card.id !== 'unknown') {
+        return card.id;
+    }
+
+    // 3. The Fallback: If a card is dynamically generated in the visual store
+    // or by a predictive calculation and lacks an ID, we construct it.
+    // (Defaulting the instance suffix to '0').
+    const safeSuit = card.suit || '?';
+    const safeRank = card.rank || '?';
+
+    return `${card.id}`;
 }

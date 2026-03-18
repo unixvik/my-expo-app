@@ -5,7 +5,7 @@ import { View, StyleProp, ViewStyle, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { AppText } from '@/Common/AppText';
-import { convertSuitToSymbol } from '@/utils/suitHelper';
+import {convertSuitToSymbol, parseStringCardsToUI, parseStringCardToUI} from '@/utils/suitHelper';
 import { CardData } from "@/types/game";
 import {
     PLAYER_CARD_WIDTH,
@@ -16,23 +16,25 @@ import {
 } from "@/state/constants";
 
 interface CardFaceProps {
-    card: CardData | null;
+    cardId: string | null;
     isSelected?: boolean;
     isFacedown?: boolean;
     style?: StyleProp<ViewStyle>;
 }
 
 export const CardFace = React.memo(({
-                                        card,
+                                        cardId,
                                         isSelected = false,
                                         isFacedown = false,
                                         style
                                     }: CardFaceProps) => {
     const theme = useTheme();
     const { scale, moderateScale } = useResponsive();
-
+// console.log("CardFace", cardId);
     // Card's intrinsic width (used for both sizing and internal proportions)
     const cardWidth = PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO;
+
+    // console.log("CardFace from ID to UI:",parseStringCardToUI(card?.id));
 
     const styles = useMemo(() => StyleSheet.create({
         cardBase: {
@@ -95,13 +97,16 @@ export const CardFace = React.memo(({
         );
     }
 
+    const card= parseStringCardToUI(cardId);
+
     // Handle empty/null cards
     if (!card) {
         return <View style={[styles.cardBase, isSelected && styles.selected, style]} />;
     }
 
+// console.log("Cardface card:",card);
     // Render face-up card
-    const isRed = ['hearts', 'diamonds', 'H', 'D', '♥', '♦'].includes(card.suit.toLowerCase());
+    const isRed = ['hearts', 'diamonds', 'H', 'D', '♥', '♦'].includes(card?.suit.toLowerCase());
     const ink = isRed ? theme.cards.suitRed : theme.cards.suitBlack;
     const symbol = convertSuitToSymbol(card.suit);
 
