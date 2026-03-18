@@ -158,7 +158,6 @@ export const createStyles = (
         },
 
         cardSlotDraw: {
-
             width: scale(BASE_CARD_WIDTH),
             height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
             borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
@@ -169,8 +168,8 @@ export const createStyles = (
         },
 
         tableCardArtwork: {
-            width: '100%',
-            height: '100%',
+            // width: '100%',
+            // height: '100%',
             borderRadius: scale(8),
             backgroundColor: theme.cards.cardFront.backgroundColor, // Gives the facedown deck a solid base
             overflow: 'hidden',
