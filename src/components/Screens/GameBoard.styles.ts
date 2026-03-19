@@ -160,6 +160,7 @@ export const createStyles = (
             alignItems: "center",
             borderColor: theme.table.rim,
             // borderWidth: scale(20),
+            borderRadius: 1000,
         },
 
         centerTable: {
