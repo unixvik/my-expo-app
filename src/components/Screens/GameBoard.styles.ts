@@ -7,6 +7,7 @@ import {
     TABLE_PERSPECTIVE,
     Z_INDEX, rnShadow, CARD_ATU_ROTATE_Z,
     BASE_CARD_WIDTH,
+    CENTER_TABLE_CARD_SCALE,
     PLAYER_CARD_WIDTH,
     TABLE_OVAL_RATIO, CARD_PLAYER_SCALE_RATIO,
 } from '@/state/constants';
@@ -22,6 +23,15 @@ export const createStyles = (
     isLandscape: boolean,
 ) =>
     StyleSheet.create({
+        backgroundImage: {
+            // position: "relative",
+            zIndex: -1,
+            // backgroundImage: {
+            position: 'absolute',
+
+            width: '100%',
+            height: '100%'
+        },
         dot: {
             position: 'absolute',
             width: 8,
@@ -42,22 +52,23 @@ export const createStyles = (
         board: {
             flex: 1,
             backgroundColor: theme.background,
-            // 🌟 Switch padding based on orientation
-            paddingVertical: isLandscape ? scale(10) : scale(40),
             width: "100%",
             height: "100%",
-            zIndex: 1
+            // Ensure the board itself is the relative parent for all absolute children
+            position: 'relative',
+            overflow: 'hidden',
         },
-
         tableContainer: {
-            flex: 1,
+            // DO NOT use flex: 1 here if it's causing drift.
+            // Use absolute centering to match the background's center.
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             justifyContent: "center",
-            // width: "80%",
             alignItems: "center",
-            alignSelf: "center",
             zIndex: 1,
-            elevation: 1,
-
         },
 
 // 🌟 2. The 3D Engine (Isolated inside the wrapper)
@@ -137,16 +148,18 @@ export const createStyles = (
 
         tableArea: {
             transform: [
-                {translateY: "-15%"}
+                {translateY: "0%"},
+                {translateX: "0%"}
             ],
             height: "100%",
+            width: "100%",
+            // backgroundColor: "red",
             aspectRatio: TABLE_OVAL_RATIO,
-            borderRadius: scale(400), // Very large radii should also be scaled
-            overflow: "hidden" as const,
+            overflow: "visible",
             justifyContent: "center",
             alignItems: "center",
             borderColor: theme.table.rim,
-            borderWidth: scale(20),
+            // borderWidth: scale(20),
         },
 
         centerTable: {
@@ -154,13 +167,14 @@ export const createStyles = (
             justifyContent: "center",
             alignItems: "center",
             gap: scale(100 * TABLE_OVAL_RATIO),
-            zIndex: Z_INDEX.PILES,
+            zIndex: 100,
+            overflow: 'visible',
         },
 
         cardSlotDraw: {
-            width: scale(BASE_CARD_WIDTH),
-            height: scale(BASE_CARD_WIDTH) * CARD_ASPECT_RATIO,
-            borderRadius: scale(BASE_CARD_WIDTH) * CARD_RADIUS_RATIO,
+            width: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE),
+            height: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE) * CARD_ASPECT_RATIO,
+            borderRadius: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE) * CARD_RADIUS_RATIO,
             // backgroundColor: theme.cards.cardBack.backgroundColor,
             justifyContent: "center",
             alignItems: "center",
@@ -187,10 +201,14 @@ export const createStyles = (
         //     color: theme.text.primary,
         // },
 
+        deckWrapper: {
+            alignItems: "center",
+            justifyContent: "center",
+        },
+
         atuSlot: {
+            marginLeft: "100%",
             position: "absolute",
-            left: scale(30),
-            top: scale(20),
             borderColor: theme.accent,
             borderWidth: scale(2),
             transform: [{rotateZ: CARD_ATU_ROTATE_Z}],
@@ -205,16 +223,17 @@ export const createStyles = (
             alignItems: "center",
             justifyContent: "center",
             alignSelf: "center",
-            width: scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO) + scale(20),
-            height: scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO + scale(20),
+            width: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE) + scale(20),
+            height: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE) * CARD_ASPECT_RATIO + scale(20),
             borderRadius: 10,
             position: 'relative', // Ensure children absolute to this
         },
         cardContainer: {
-            // This container matches the parent size and centers its children
             ...StyleSheet.absoluteFillObject,
             justifyContent: 'center',
             alignItems: 'center',
+            overflow: 'visible',
+            backfaceVisibility: 'visible',
         },
         absoluteCenter: {
             position: 'absolute',
@@ -225,7 +244,8 @@ export const createStyles = (
             justifyContent: 'center',
             alignItems: 'center',
             transform: [
-                {translateX: 10,
+                {
+                    translateX: 10,
                 },
             ],
             zIndex: Z_INDEX.CARD_PORTAL
@@ -270,8 +290,8 @@ export const createStyles = (
         // 🌟 1. The Physics Box (Casts the shadow, holds the math)
         playerCardWrapper: {
             // minWidth: "100%",
-            width: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO),
-            height: scale(PLAYER_CARD_WIDTH*CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
+            width: scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO),
+            height: scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO) * CARD_ASPECT_RATIO,
             ...rnShadow("heavy"),
             borderRadius: scale(10),
             // opacity: 0.3,
@@ -338,7 +358,7 @@ export const createStyles = (
             paddingHorizontal: scale(10),
 
             // To see the resizing work clearly:
-            backgroundColor: theme.playerZone.backgroundArea,
+            // backgroundColor: theme.playerZone.backgroundArea,
 
             overflow: "visible",
             zIndex: Z_INDEX.HAND,

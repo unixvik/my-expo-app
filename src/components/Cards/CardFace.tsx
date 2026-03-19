@@ -1,7 +1,7 @@
 // src/components/Cards/CardFace.tsx
 
 import React, { useMemo } from 'react';
-import { View, StyleProp, ViewStyle, StyleSheet } from 'react-native';
+import { View, StyleProp, ViewStyle, StyleSheet, ImageBackground } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { AppText } from '@/Common/AppText';
@@ -20,19 +20,20 @@ interface CardFaceProps {
     isSelected?: boolean;
     isFacedown?: boolean;
     style?: StyleProp<ViewStyle>;
+    cardWidth?: number; // override default size (design units)
 }
 
 export const CardFace = React.memo(({
                                         cardId,
                                         isSelected = false,
                                         isFacedown = false,
-                                        style
+                                        style,
+                                        cardWidth: cardWidthProp,
                                     }: CardFaceProps) => {
     const theme = useTheme();
     const { scale, moderateScale } = useResponsive();
-// console.log("CardFace", cardId);
     // Card's intrinsic width (used for both sizing and internal proportions)
-    const cardWidth = PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO;
+    const cardWidth = cardWidthProp ?? PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO;
 
     // console.log("CardFace from ID to UI:",parseStringCardToUI(card?.id));
 
@@ -91,10 +92,19 @@ export const CardFace = React.memo(({
 
     // Handle facedown cards
     if (isFacedown) {
+        const backImage = theme.cards.cardBack.image;
+        if (backImage) {
+            return (
+                <ImageBackground
+                    source={backImage}
+                    resizeMode="cover"
+                    style={[styles.cardBase, isSelected && styles.selected, style]}
+                    imageStyle={{ borderRadius: scale(8) }}
+                />
+            );
+        }
         return (
-            <View style={[styles.cardBase, isSelected && styles.selected, style]}>
-                {/* Add your card back pattern here if needed */}
-            </View>
+            <View style={[styles.cardBase, isSelected && styles.selected, style]} />
         );
     }
 

@@ -23,6 +23,7 @@ export interface CardBackStripe {
 
 export interface CardBackTheme {
     backgroundColor: string;
+    image?: any; // require('@/assets/images/card-back.png') — overrides pattern/stripe/emblem when set
     pattern: CardBackPattern;
     stripe: CardBackStripe;
     emblem: CardBackEmblem;
@@ -84,6 +85,7 @@ export interface ThemeTokens {
     // visual identity tokens
     cardSymbol: string
     cardBackColor: string
+    cardBackImage?: any // optional: require('@/assets/images/card-back.png')
     table: {
         vignette?: string
         rail?: string
@@ -113,7 +115,8 @@ export const midnightTokens: ThemeTokens = {
 
     // visual identity
     cardSymbol: "◆",
-    cardBackColor: "#1E293B",
+    cardBackColor: "#2b62b6",
+    cardBackImage: require('@/assets/images/cards.png'),
 
     table: {
         vignette: "rgba(0,20,60,0.35)",

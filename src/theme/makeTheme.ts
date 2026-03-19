@@ -11,6 +11,7 @@ export function makeTheme(tokens: ThemeTokens): GameTheme {
         cards: {
             cardBack: {
                 backgroundColor: tokens.cardBackColor,
+                image: tokens.cardBackImage,
 
                 pattern: {
                     borderRadius: 3,

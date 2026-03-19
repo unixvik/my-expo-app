@@ -6,12 +6,13 @@ import {useResponsive} from "@/hooks/useResponsive";
 import {CenterTable} from "@/components/Table/CenterTable";
 import {OpponentsLayer} from "@/components/UI/Opponents/OpponentsLayer";
 import {PlayerLayer} from "@/components/UI/Player/PlayerLayer";
-import {View} from "react-native";
+import {ImageBackground, StyleSheet, View} from "react-native";
 import {DebugTrajectory} from "@/components/Dev/DebugTrajectory";
 import {FlightOverlay} from "@/components/Dev/FlightOverlay";
 import DebugFlightSpawner from "@/components/Dev/DebugFlightSpawner";
 import {getSceneTransform} from "@/utils/helpers";
 import {GameStatusOverlay} from "@/components/Dev/GameStatusOverlay";
+import {Background} from "@/components/Overlays/Background";
 
 export const GameBoard = () => {
     const theme = useTheme();
@@ -27,11 +28,18 @@ export const GameBoard = () => {
 
     return (
         <View style={styles.board}>
+
             {/*<GameStatusOverlay/>*/}
             {/*<DebugTrajectory/>*/}
             <FlightOverlay/>
-            {/*<DebugFlightSpawner/>*/}
+            <DebugFlightSpawner/>
             {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
+            {/*<Background/>*/}
+            <ImageBackground
+                source={require('@/assets/images/background.png')}
+
+                style={[StyleSheet.absoluteFillObject, {zIndex: -1,  transform: [ { rotateX: "0deg"}]}]}
+            />
             <View style={styles.tableContainer}>
                 {/* 1. THE 3D ENVIRONMENT */}
                 <View style={[
@@ -40,6 +48,7 @@ export const GameBoard = () => {
                 ]}>
                     <View style={styles.tableArea}>
                         {/*TABLE Surface*/}
+
                         <TableSurface/>
 
                         {/*CENTER TABLE*/}

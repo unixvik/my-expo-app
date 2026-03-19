@@ -3,7 +3,7 @@ import {TouchableOpacity, View, StyleSheet} from "react-native";
 import {useResponsive} from "@/hooks/useResponsive";
 import {useGameStore} from "@/state/useGameStore";
 import {CardFace} from "@/components/Cards/CardFace";
-import {DISCARD_OFFSET} from "@/state/constants";
+import {DISCARD_OFFSET, BASE_CARD_WIDTH, CENTER_TABLE_CARD_SCALE} from "@/state/constants";
 import {convertServerCardToUICard, parseStringCardsToUI} from "@/utils/suitHelper";
 import {useAwaitingDraw} from "@/state/gameSelectors";
 import {AppText} from "@/Common/AppText";
@@ -24,6 +24,7 @@ const PILE_LAYERS = [
 export function CenterTable() {
     const {styles, theme} = useAppStyles();
     const {scale} = useResponsive();
+    const centerCardWidth = BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE;
 
     // Store Selectors
     const discardPile = useGameStore((s) => s.server.discardPile);
@@ -60,24 +61,27 @@ export function CenterTable() {
 
     return (
         <View style={styles.centerTable}>
-            {/* ATU CARD */}
-            {atuCard && (
-                <View style={[styles.atuSlot]}>
-                    <CardFace cardId={atuCard[0].id}/>
-                </View>
-            )}
+            {/* DRAW DECK + ATU overlapping */}
+            <View style={styles.deckWrapper}>
+                {/* ATU sits behind the deck */}
+                {atuCard && (
+                    <View style={[styles.atuSlot]}>
+                        <CardFace cardId={atuCard[0].id} cardWidth={centerCardWidth}/>
+                    </View>
+                )}
 
-            {/* DRAW DECK */}
-            <TouchableOpacity
-                ref={drawRef}
-                onLayout={() => updateLayout('deck', drawRef, null)}
-                style={[styles.cardSlotDraw]}
-                disabled={!mandatoryDraw}
-                onPress={() => drawCards(false)}
-            >
-                <AppText style={styles.slotLabel}>DECK ({cardsRemaining})</AppText>
-                <CardFace cardId={null} isFacedown/>
-            </TouchableOpacity>
+                {/* DRAW DECK on top */}
+                <TouchableOpacity
+                    ref={drawRef}
+                    onLayout={() => updateLayout('deck', drawRef, null)}
+                    style={[styles.cardSlotDraw]}
+                    disabled={!mandatoryDraw}
+                    onPress={() => drawCards(false)}
+                >
+                    <AppText style={styles.slotLabel}>DECK ({cardsRemaining})</AppText>
+                    <CardFace cardId={null} isFacedown cardWidth={centerCardWidth}/>
+                </TouchableOpacity>
+            </View>
 
             {/* DISCARD PILE */}
             <TouchableOpacity
@@ -108,7 +112,7 @@ export function CenterTable() {
                                     zIndex: layer.index,
                                 }]}
                             >
-                                <CardFace cardId={cardRaw.id}/>
+                                <CardFace cardId={cardRaw.id} cardWidth={centerCardWidth}/>
                             </View>
                         );
                     })}
@@ -116,7 +120,7 @@ export function CenterTable() {
                     {/* Top card */}
                     <View style={[styles.absoluteCenter, { zIndex: 10 }]}>
                         {mainSlotRaw ? (
-                            <CardFace cardId={mainSlotRaw.id}/>
+                            <CardFace cardId={mainSlotRaw.id} cardWidth={centerCardWidth}/>
                         ) : (
                             <AppText variant="secondary">Empty</AppText>
                         )}
@@ -147,6 +151,7 @@ export function CenterTable() {
                                 isClosing={isClosingFan}
                                 isFlying={isFlying}
                                 styles={styles}
+                                cardWidth={centerCardWidth}
                             />
                         );
                     })}

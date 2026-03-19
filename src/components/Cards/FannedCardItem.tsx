@@ -15,7 +15,7 @@ import {CardFace} from "@/components/Cards/CardFace";
 const randomJitter = (base: number, range: number) => base + (Math.random() - 0.5) * range;
 
 // @ts-ignore
-export const FannedCardItem = ({card, index, isClosing, styles}: any) => {
+export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any) => {
     const {x: fanX, y: fanY, rotation: fanRotation} = getFanPosition(index);
 
     // Jitter target — fixed per mount (card's resting position)
@@ -77,6 +77,7 @@ export const FannedCardItem = ({card, index, isClosing, styles}: any) => {
             <CardFace
                 cardId={card}
                 isFacedown={false}
+                cardWidth={cardWidth}
                 style={styles.tableCardArtwork}
             />
         </Animated.View>

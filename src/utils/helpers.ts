@@ -47,6 +47,7 @@ export const getSceneTransform = () => {
     return [
         { perspective: TABLE_PERSPECTIVE },
         { rotateX: `${TABLE_TILT}deg` },
+
     ];
 };
 

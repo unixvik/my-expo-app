@@ -12,7 +12,10 @@ import Animated, {
 import { useVisualStore } from '@/state/useVisualStore';
 import {
     BASE_CARD_WIDTH,
+    CENTER_TABLE_CARD_SCALE,
     CARD_ASPECT_RATIO,
+    PLAYER_CARD_WIDTH,
+    CARD_PLAYER_SCALE_RATIO,
     rnShadow,
     TABLE_PERSPECTIVE,
     TABLE_TILT,
@@ -70,7 +73,7 @@ const FlyingCardShadow = ({ ghost, cardWidth, cardHeight, targetX, targetY, targ
 };
 
 // Card component without shadow
-export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY, targetRotation, delay, onDone }: any) => {
+export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, sizeScaleRatio = 1, targetX, targetY, targetRotation, delay, zIndex = 0, onDone }: any) => {
     const flightProgress = useSharedValue(0);
     const impactProgress = useSharedValue(0);
     const baseShadow = rnShadow("heavy");
@@ -106,8 +109,9 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
         const arc = -arcMultiplier * 150;
 
         const squash = Math.sin(imp * Math.PI) * interpolate(imp, [0, 1], [0.12, 0]);
-        const scaleX = (1 + squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]);
-        const scaleY = (1 - squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]);
+        const sizeScale = interpolate(p, [0, 1], [1, sizeScaleRatio]);
+        const scaleX = (1 + squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]) * sizeScale;
+        const scaleY = (1 - squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]) * sizeScale;
 
         return {
             transform: [
@@ -116,7 +120,6 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
                 { scaleX },
                 { scaleY },
                 { rotateZ: `${interpolate(p, [0, 1], [0, targetRotation]) + wobble}deg` },
-                { rotateX: `${arcMultiplier * 20}deg` },
             ],
             // ✅ Fade out at end for crossfade
             // opacity: interpolate(p, [0, 0.85, 1], [1, 1, 0]),
@@ -147,6 +150,8 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, targetX, targetY,
                     top: 0,
                     width: cardWidth,
                     height: cardHeight,
+                    zIndex,
+                    elevation: zIndex,
                 },
                 animatedCardStyle,
                 // ✅ Use React Native shadow (stays with card in 3D space)
@@ -170,8 +175,10 @@ export const FlightOverlay = () => {
     const totalCardsRef = useRef(0);
     const { scale,moderateScale } = useResponsive();
 
-    const cardWidth = scale(BASE_CARD_WIDTH);
-    const cardHeight = cardWidth * CARD_ASPECT_RATIO;
+    const centerCardWidth = scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE);
+    const centerCardHeight = centerCardWidth * CARD_ASPECT_RATIO;
+    const playerCardWidth = scale(PLAYER_CARD_WIDTH * CARD_PLAYER_SCALE_RATIO);
+    const playerCardHeight = playerCardWidth * CARD_ASPECT_RATIO;
 
     const containerPerspective = useSharedValue(2000);
     const containerTilt = useSharedValue(0);
@@ -230,16 +237,23 @@ export const FlightOverlay = () => {
                     const delay = fanIndex * 20; // ✅ Use fanIndex for stagger
 
 
+                    const startWidth = isDraw ? centerCardWidth : playerCardWidth;
+                    const startHeight = isDraw ? centerCardHeight : playerCardHeight;
+                    const endWidth = isDraw ? playerCardWidth : centerCardWidth;
+                    const sizeScaleRatio = endWidth / startWidth;
+
                     return (
                         <FlyingCardItem
                             key={ghost.id}
                             ghost={ghost}
-                            cardWidth={cardWidth}
-                            cardHeight={cardHeight}
+                            cardWidth={startWidth}
+                            cardHeight={startHeight}
+                            sizeScaleRatio={sizeScaleRatio}
                             targetX={landingX}
                             targetY={landingY}
                             targetRotation={landingRotation}
                             delay={delay}
+                            zIndex={index}
                             onDone={() => handleCardDone(ghost.id)}
                         />
                     );
