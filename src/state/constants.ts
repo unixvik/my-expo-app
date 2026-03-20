@@ -54,7 +54,7 @@ export const SPRING_CONFIGS = {
 
 // 4. Z-INDEX REGISTRY (Uniformity)
 export const Z_INDEX = {
-    TABLE: 1,
+    TABLE: 9,
     PILES: 100,
     ATU: -1,
     HAND: 10,

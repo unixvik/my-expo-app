@@ -68,7 +68,7 @@ export const createStyles = (
             bottom: 0,
             justifyContent: "center",
             alignItems: "center",
-            zIndex: 1,
+            zIndex: Z_INDEX.TABLE,
         },
 
 // 🌟 2. The 3D Engine (Isolated inside the wrapper)
@@ -381,6 +381,7 @@ export const createStyles = (
             // Optional: If you want the cards to float slightly *above* the red bar,
             // add a negative bottom margin to push them up:
             marginBottom: scale(20),
+            zIndex: Z_INDEX.HAND
         },
 // 🌟 4. Fixed Symmetrical Anchors
         sideZone: {

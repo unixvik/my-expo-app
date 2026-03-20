@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { GameTheme } from "@/theme/themeTokens";
+import {CARD_ASPECT_RATIO, rnShadow} from "@/state/constants";
 
 export const createStyles = (
     theme: GameTheme,
@@ -9,12 +10,19 @@ export const createStyles = (
 
     const emblem = theme.cards.cardBack.emblem;
 
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
     return StyleSheet.create({
-
+        cardBase: {
+            // 🌟 INTRINSIC DIMENSIONS - CardFace owns its size
+            width: scale(cardWidth),
+            height: scale(cardWidth) * CARD_ASPECT_RATIO,
+            // borderRadius: scale(18),
+            backgroundColor: theme.cards.cardBack.backgroundColor,
+            borderWidth: scale(2),
+            borderColor: 'rgba(0,0,0,0.91)',
+            ...rnShadow("contact"),
+            overflow: "visible",
+            // backgroundColor: 'transparent',
+        },
         container: {
             width: "100%",
             height: "100%",
@@ -22,7 +30,8 @@ export const createStyles = (
             backgroundColor: theme.cards.cardBack.backgroundColor,
             overflow: "hidden",
             borderWidth: scale(1),
-            borderColor: "rgba(255,255,255,0.1)",
+            borderColor: "rgba(255,255,255,0.91)",
+            // zIndex: 1,
         },
 
         gradientOverlay: {

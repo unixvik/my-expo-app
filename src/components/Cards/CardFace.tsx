@@ -14,6 +14,7 @@ import {
     TABLE_OVAL_RATIO,
     rnShadow
 } from "@/state/constants";
+import {CardBack} from "@/components/Cards/CardBack";
 
 interface CardFaceProps {
     cardId: string | null;
@@ -92,20 +93,24 @@ export const CardFace = React.memo(({
 
     // Handle facedown cards
     if (isFacedown) {
-        const backImage = theme.cards.cardBack.image;
-        if (backImage) {
-            return (
-                <ImageBackground
-                    source={backImage}
-                    resizeMode="cover"
-                    style={[styles.cardBase, isSelected && styles.selected, style]}
-                    imageStyle={{ borderRadius: scale(8) }}
-                />
-            );
-        }
         return (
-            <View style={[styles.cardBase, isSelected && styles.selected, style]} />
+        <CardBack/>
         );
+        // const backImage = theme.cards.cardBack.image;
+        //
+        // if (backImage) {
+        //     return (
+        //         <ImageBackground
+        //             source={backImage}
+        //             resizeMode="cover"
+        //             style={[styles.cardBase, isSelected && styles.selected, style]}
+        //             imageStyle={{ borderRadius: scale(8) }}
+        //         />
+        //     );
+        // }
+        // return (
+        //     <View style={[styles.cardBase, isSelected && styles.selected, style]} />
+        // );
     }
 
     const card= parseStringCardToUI(cardId);

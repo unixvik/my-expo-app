@@ -32,13 +32,14 @@ export const GameBoard = () => {
             {/*<GameStatusOverlay/>*/}
             {/*<DebugTrajectory/>*/}
             <FlightOverlay/>
-            <DebugFlightSpawner/>
+            {/*<DebugFlightSpawner/>*/}
             {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
             {/*<Background/>*/}
+            <PlayerLayer/>
             <ImageBackground
                 source={require('@/assets/images/background.png')}
 
-                style={[StyleSheet.absoluteFillObject, {zIndex: -1,  transform: [ { rotateX: "0deg"}]}]}
+                style={[StyleSheet.absoluteFillObject, {zIndex:9,  transform: [ { rotateX: "0deg"}]}]}
             />
             <View style={styles.tableContainer}>
                 {/* 1. THE 3D ENVIRONMENT */}
@@ -60,7 +61,7 @@ export const GameBoard = () => {
             {/* 2. OPPONENTS LAYER */}
             <OpponentsLayer/>
             {/* 3. PLAYER ZONE */}
-            <PlayerLayer/>
+
 
         </View>
     );
