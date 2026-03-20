@@ -170,6 +170,7 @@ export const createStyles = (
             gap: scale(100 * TABLE_OVAL_RATIO),
             zIndex: 100,
             overflow: 'visible',
+            // transform: [{perspective: TABLE_PERSPECTIVE},{rotateX: `${TABLE_TILT}deg`}]
         },
 
         cardSlotDraw: {

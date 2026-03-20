@@ -9,9 +9,12 @@ import Animated, {
     Easing,
     useDerivedValue,
 } from 'react-native-reanimated';
+import {SHADOW_TOKENS} from "@/state/constants";
+import {getSceneTransform} from "@/utils/helpers";
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
-
+// 1. Define the transform once outside or memoize it
+const SCENE_TRANSFORM = getSceneTransform();
 // ─── Configuration ────────────────────────────────────────────────────────────
 export interface SweepConfig {
     colors: string[];
@@ -24,12 +27,12 @@ export interface SweepConfig {
 }
 
 const DEFAULT_SWEEP_CONFIG: SweepConfig = {
-    colors: ['#ff2200', '#ff6600', '#ffaa00', '#ff2200'],
-    rotationDuration: 3000,
-    colorDuration: 3000,
-    trailLength: 8,
-    trailSpacing: 15, // Tighter spacing looks more like a "sweep"
-    headOpacity: 0.95,
+    colors: ['#004cd5', '#e30505', '#ffffff', '#ff2200'],
+    rotationDuration: 13000,
+    colorDuration: 1000,
+    trailLength: 10,
+    trailSpacing: 10, // Tighter spacing looks more like a "sweep"
+    headOpacity: 0.5,
     bloom: true,
 };
 
@@ -38,7 +41,11 @@ const TrailItem = memo(({ source, index, color, spacing, opacity }: any) => {
     const style = useAnimatedStyle(() => ({
         tintColor: color.value,
         opacity: opacity,
-        // transform: [{ rotate: `${-(index + 1) * spacing}deg` }],
+        // 2. Use a static reference or a Reanimated-compatible object
+        transform: [
+            ...SCENE_TRANSFORM,
+            // { rotate: `${-(index + 1) * spacing}deg` } // If you want the trail to actually offset
+        ],
     }));
 
     return (
@@ -71,7 +78,7 @@ export const SweepRing = ({ source, config: override, style }: { source: any, co
         // );
         colorPhase.value = withRepeat(
             withTiming(n, { duration: cfg.colorDuration, easing: Easing.linear }),
-            0, false
+            -1, false
         );
     }, [cfg.rotationDuration, cfg.colorDuration, n]);
 
@@ -90,10 +97,20 @@ export const SweepRing = ({ source, config: override, style }: { source: any, co
     // Bloom Styles (Optimized with combined transforms)
     const bloom1Style = useAnimatedStyle(() => ({
         // tintColor: sharedColor.value,
-        tintColor: "#000",
+        tintColor: "#000000",
         opacity: cfg.headOpacity * 1,
         overflow: "visible",
-        transform: [{ scale: 0.9 },{translateY: "+8%"}],
+        transform: [{ scale: 0.9 },{translateY: "+10%"}],
+    }));
+    const bloom2Style = useAnimatedStyle(() => ({
+        // tintColor: sharedColor.value,
+        tintColor: "#000000",
+        opacity: cfg.headOpacity * SHADOW_TOKENS.soft.opacity,
+        overflow: "visible",
+        transform: [
+            { scale: 1 },
+            {translateY: `${SHADOW_TOKENS.soft.offsetY}%`}
+        ],
     }));
 
     return (
@@ -109,23 +126,15 @@ export const SweepRing = ({ source, config: override, style }: { source: any, co
                     spacing={cfg.trailSpacing}
                     // Exponential decay for the tail
                     opacity={cfg.headOpacity * Math.pow(0.6, i + 1)}
+                    // opacity={1}
                 />
             ))}
-
-            {/* 2. Bloom/Glow Layer */}
-            {cfg.bloom && (
-                <AnimatedImage
-                    source={source}
-                    resizeMode="contain"
-                    style={[styles.base, bloom1Style]}
-                />
-            )}
 
             {/* 3. The Leading Head */}
             <AnimatedImage
                 source={source}
                 resizeMode="contain"
-                style={[styles.base, headStyle]}
+                style={[styles.base, headStyle,{transform: getSceneTransform()}]}
             />
 
         </Animated.View>
@@ -137,5 +146,6 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         width: '100%',
         height: '100%',
+
     },
 });

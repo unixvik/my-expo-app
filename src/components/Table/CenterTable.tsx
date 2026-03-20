@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useEffect, useRef} from 'react';
 import {TouchableOpacity, View, StyleSheet} from "react-native";
 import {useResponsive} from "@/hooks/useResponsive";
 import {useGameStore} from "@/state/useGameStore";
@@ -7,7 +7,7 @@ import {DISCARD_OFFSET, BASE_CARD_WIDTH, CENTER_TABLE_CARD_SCALE} from "@/state/
 import {convertServerCardToUICard, parseStringCardsToUI} from "@/utils/suitHelper";
 import {useAwaitingDraw} from "@/state/gameSelectors";
 import {AppText} from "@/Common/AppText";
-import {useAnimatedRef} from "react-native-reanimated";
+import Animated, {useAnimatedRef, useSharedValue, useAnimatedStyle, withSpring, withDelay, withTiming} from "react-native-reanimated";
 import {useVisualStore} from "@/state/useVisualStore";
 import {FannedCardItem} from "@/components/Cards/FannedCardItem";
 import {useAppStyles} from "@/hooks/useAppStyles";
@@ -47,6 +47,41 @@ export function CenterTable() {
     const discardRef = useAnimatedRef<View>();
     const drawRef = useAnimatedRef<View>();
 
+    // Entrance animation — springs up from below with bouncy wobble
+    const gameStatus    = useGameStore((s) => s.server.gameStatus);
+    const tableSettled  = useVisualStore((s) => s.tableSettled);
+
+    // Re-measure refs once the table animation has settled so flying cards
+    // target the correct visual position (not the off-screen starting position).
+    useEffect(() => {
+        if (tableSettled) {
+            updateLayout('deck', drawRef, null);
+            updateLayout('discard', discardRef, 1);
+        }
+    }, [tableSettled]);
+    const hasEntered = useRef(false);
+    const entranceY       = useSharedValue(220);
+    const entranceScale   = useSharedValue(0.6);
+    const entranceOpacity = useSharedValue(0);
+
+    useEffect(() => {
+        if (gameStatus === 'starting' && !hasEntered.current) {
+            hasEntered.current = true;
+            const SPRING = { mass: 1.1, stiffness: 220, damping: 7 };
+            entranceOpacity.value = withDelay(180, withTiming(1, { duration: 180 }));
+            entranceY.value       = withDelay(180, withSpring(0, SPRING));
+            entranceScale.value   = withDelay(180, withSpring(1, SPRING));
+        }
+    }, [gameStatus]);
+
+    const entranceStyle = useAnimatedStyle(() => ({
+        opacity: entranceOpacity.value,
+        transform: [
+            { translateY: entranceY.value },
+            { scale: entranceScale.value },
+        ],
+    }));
+
     // Accumulate jitter per pile slot — only add new entries, never regenerate existing ones
     const jitterCache = React.useRef<Array<{ x: number; y: number; r: number }>>([]);
     const needed = Math.min(Math.max(cardsDiscarded - 1, 0), 5);
@@ -60,11 +95,11 @@ export function CenterTable() {
     const pileLayersWithJitter = jitterCache.current.slice(0, needed).map((j, i) => ({ ...j, index: i }));
 
     return (
-        <View style={styles.centerTable}>
+        <Animated.View style={[styles.centerTable, entranceStyle]}>
             {/* DRAW DECK + ATU overlapping */}
             <View style={styles.deckWrapper}>
                 {/* ATU sits behind the deck */}
-                {atuCard && (
+                {atuCard && atuCard.length > 0 && (
                     <View style={[styles.atuSlot]}>
                         <CardFace cardId={atuCard[0].id} cardWidth={centerCardWidth}/>
                     </View>
@@ -157,6 +192,6 @@ export function CenterTable() {
                     })}
                 </View>
             </TouchableOpacity>
-        </View>
+        </Animated.View>
     );
 }

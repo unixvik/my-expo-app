@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useRef} from 'react';
 import {useTheme} from '@/hooks/useTheme';
 import {createStyles} from './GameBoard.styles';
 import {TableSurface} from "@/components/Table/TableSurface";
@@ -13,6 +13,7 @@ import DebugFlightSpawner from "@/components/Dev/DebugFlightSpawner";
 import {getSceneTransform} from "@/utils/helpers";
 import {GameStatusOverlay} from "@/components/Dev/GameStatusOverlay";
 import {Background} from "@/components/Overlays/Background";
+import Video from "react-native-video";
 
 export const GameBoard = () => {
     const theme = useTheme();
@@ -30,30 +31,43 @@ export const GameBoard = () => {
         <View style={styles.board}>
 
             {/*<GameStatusOverlay/>*/}
-            {/*<DebugTrajectory/>*/}
+            <DebugTrajectory/>
             <FlightOverlay/>
-            {/*<DebugFlightSpawner/>*/}
+            <DebugFlightSpawner/>
             {/* 🌟 THE FIX: The 2D Container traps the 3D math */}
             {/*<Background/>*/}
+
+
             <PlayerLayer/>
+
             <ImageBackground
                 source={require('@/assets/images/background.png')}
 
-                style={[StyleSheet.absoluteFillObject, {zIndex:9,  transform: [ { rotateX: "0deg"}]}]}
+                style={[StyleSheet.absoluteFillObject, {zIndex:3,  transform: [ { rotateX: "0deg"}]}]}
             />
+            <ImageBackground
+                source={require('@/assets/images/smoke.png')}
+
+                style={[StyleSheet.absoluteFillObject, {zIndex:7, opacity:0.6,  transform: [ { rotateX: "0deg"}]}]}
+                imageStyle={{tintColor: "rgba(213,0,75,0.72)",opacity: 0.3 }}
+            />
+
+
+
             <View style={styles.tableContainer}>
+
                 {/* 1. THE 3D ENVIRONMENT */}
                 <View style={[
-                    {transform: getSceneTransform()},
+                    // {transform: getSceneTransform()},
                     isLandscape && {flex: 1}
                 ]}>
                     <View style={styles.tableArea}>
                         {/*TABLE Surface*/}
 
-                        <TableSurface/>
 
+                        <TableSurface/>
                         {/*CENTER TABLE*/}
-                        <CenterTable/>
+
 
                     </View>
                 </View>

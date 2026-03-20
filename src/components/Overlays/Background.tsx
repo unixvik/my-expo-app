@@ -4,13 +4,13 @@ import {AppText} from "@/Common/AppText";
 export function Background() {
     return (
         <View style={styles.container}>
-            {/*<ImageBackground*/}
-            {/*    source={require('@/assets/images/table.jpg')}*/}
-            {/*    resizeMode="stretch"*/}
-            {/*    style={styles.image}*/}
-            {/*>*/}
-            {/*    <AppText style={styles.text}>Welcome to Claim</AppText>*/}
-            {/*</ImageBackground>*/}
+            <ImageBackground
+                source={require('@/assets/images/table.jpg')}
+                resizeMode="stretch"
+                style={styles.image}
+            >
+                {/*<AppText style={styles.text}>Welcome to Claim</AppText>*/}
+            </ImageBackground>
         </View>
     );
 }

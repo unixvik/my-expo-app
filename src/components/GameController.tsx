@@ -29,9 +29,9 @@ export const GameController = () => {
         case 'waiting': // Lobby
             return <LobbyScreen />;
 
-        case 'starting': // Countdown / Animation phase
-            return <LoadingOverlay message="Dealing Cards..." />;
-
+        // case 'starting': // Countdown / Animation phase
+        //     return <LoadingOverlay message="Dealing Cards..." />;
+        case 'starting':
         case 'playing': // The actual game
             return <GameBoard />;
 

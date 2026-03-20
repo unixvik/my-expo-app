@@ -31,6 +31,7 @@ export interface CardBackTheme {
 
 export interface CardFrontTheme {
     backgroundColor: string;
+    borderColor: string;
 }
 
 export interface CardsTheme {
@@ -60,6 +61,7 @@ export interface GameTheme {
     surface: string;
     accent: string;
     cards: CardsTheme;
+    borderCard: string;
     text: {
         primary: string;
         secondary: string;
@@ -86,6 +88,7 @@ export interface ThemeTokens {
     cardSymbol: string
     cardBackColor: string
     cardBackImage?: any // optional: require('@/assets/images/card-back.png')
+    cardBorder: string,
     table: {
         vignette?: string
         rail?: string
@@ -117,7 +120,7 @@ export const midnightTokens: ThemeTokens = {
     cardSymbol: "◆",
     cardBackColor: "#2b62b6",
     cardBackImage: require('@/assets/images/cards.png'),
-
+    cardBorder: "#eac408",
     table: {
         vignette: "rgba(0,20,60,0.35)",
         rail: "rgba(0,180,255,0.62)",
@@ -142,6 +145,7 @@ export const midnightTokens: ThemeTokens = {
     }
 }
 export const casinoTokens: ThemeTokens = {
+    cardBorder: "",
     playerZone: {backgroundArea: ""},
     table: {},
     background: "#0f172a",

@@ -38,7 +38,8 @@ export function makeTheme(tokens: ThemeTokens): GameTheme {
             },
 
             cardFront: {
-                backgroundColor: "#F8FAFC",
+                backgroundColor: "#959391",
+                borderColor: "#d17906",
             },
 
             suitRed: tokens.suitRed,

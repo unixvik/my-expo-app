@@ -47,10 +47,11 @@ export const CardFace = React.memo(({
             backgroundColor: isFacedown
                 ? theme.cards.cardBack.backgroundColor
                 : theme.cards.cardFront.backgroundColor,
-            borderWidth: scale(1),
-            borderColor: 'rgba(0,0,0,0.51)',
+            borderWidth: scale(2),
+            // borderColor: 'rgba(0,0,0,0.51)',
             ...rnShadow("contact"),
             overflow: "visible",
+            borderColor: theme.cards.cardFront.borderColor,
             // backgroundColor: 'transparent',
         },
         selected: {

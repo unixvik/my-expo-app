@@ -55,6 +55,9 @@ interface VisualStore {
     removeFlyingCard: (id: string) => void;
 
     triggerFanUp(): void;
+
+    tableSettled: boolean;
+    setTableSettled: () => void;
 }
 
 export const useVisualStore = create<VisualStore>()(
@@ -62,6 +65,8 @@ export const useVisualStore = create<VisualStore>()(
         visualHand: [],
         flyingCards: [],
         isClosingFan: false,
+        tableSettled: false,
+        setTableSettled: () => set((state) => { state.tableSettled = true; }),
 
         // Layouts
         layouts: {
