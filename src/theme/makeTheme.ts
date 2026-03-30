@@ -1,8 +1,9 @@
-import { ThemeTokens, GameTheme } from "./themeTokens"
+import {ThemeTokens, GameTheme} from "./themeTokens"
 
 export function makeTheme(tokens: ThemeTokens): GameTheme {
     return {
-        id: "midnight",
+        shadow: "",
+        id: "casino",
 
         background: tokens.background,
         surface: tokens.surface,
@@ -10,26 +11,11 @@ export function makeTheme(tokens: ThemeTokens): GameTheme {
 
         cards: {
             cardBack: {
-                backgroundColor: tokens.cardBackColor,
-                image: tokens.cardBackImage,
-
-                pattern: {
-                    borderRadius: 3,
-                    borderWidth: 0.05,
-                    borderColor: "rgba(255,255,255,0.05)",
-                    backgroundColor: "rgba(0,0,0,0.3)",
-                    margins: "5%",
-                },
-
-                stripe: {
-                    backgroundColor: tokens.accent,
-                    opacity: 0.1,
-                    height: 2,
-                    transform: [{ rotate: "45deg" }],
-                },
+                backgroundColor: tokens.cards.cardBack.backgroundColor,
+                image: tokens.cards.cardBack.image,
 
                 emblem: {
-                    symbol: tokens.cardSymbol,
+                    symbol: tokens.cards.cardBack.emblem.symbol,
                     fontSize: 25,
                     color: tokens.accent,
                     opacity: 0.2,
@@ -38,21 +24,22 @@ export function makeTheme(tokens: ThemeTokens): GameTheme {
             },
 
             cardFront: {
-                backgroundColor: "#959391",
-                borderColor: "#d17906",
+                backgroundColor: tokens.cards.cardFront.backgroundColor,
+                suitRed: tokens.cards.cardFront.suitRed,
+                suitBlack: tokens.cards.cardFront.suitBlack,
+                image: tokens.cards.cardFront.image
             },
-
-            suitRed: tokens.suitRed,
-            suitBlack: tokens.suitBlack,
-            selectedBorder: tokens.suitRed,
+            cardBorders: {
+                selectedBorder: tokens.cards.cardBorders.selectedBorder,
+                defaultBorder: tokens.cards.cardBorders.defaultBorder,
+                borderSize: tokens.cards.cardBorders.borderSize,
+                borderRadius: tokens.cards.cardBorders.borderRadius,
+            }
         },
-
         text: {
             primary: tokens.text.primary,
             secondary: tokens.text.secondary,
         },
-
-        shadow: tokens.shadow,
 
         table: tokens.table,
 

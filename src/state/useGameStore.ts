@@ -103,7 +103,7 @@ export const useGameStore = create<GameStore>()(
             awaitingMandatoryDraw: false,
             server: initialServerState,
             local: {
-                themeId: 'midnight',
+                themeId: 'casino',
                 selectedCardId: null,
                 isMyTurn: false,
                 selectedDiscardIds: [],

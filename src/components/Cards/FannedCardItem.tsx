@@ -33,11 +33,20 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
     // On mount: fade in, scale up, then drift into jittered resting position
     React.useEffect(() => {
         const stagger = index * 40;
-        opacity.value = withDelay(stagger, withTiming(1, { duration: 150 }));
-        scaleVal.value = withDelay(stagger, withSpring(1, { damping: 10, stiffness: 300 }));
-        rotation.value = withDelay(stagger + 80, withTiming(jitteredRotation, { duration: 250, easing: Easing.out(Easing.quad) }));
-        translateX.value = withDelay(stagger + 80, withTiming(jitteredX, { duration: 250, easing: Easing.out(Easing.quad) }));
-        translateY.value = withDelay(stagger + 80, withTiming(jitteredY, { duration: 250, easing: Easing.out(Easing.quad) }));
+        opacity.value = withDelay(stagger, withTiming(1, {duration: 150}));
+        scaleVal.value = withDelay(stagger, withSpring(1, {damping: 10, stiffness: 300}));
+        rotation.value = withDelay(stagger + 80, withTiming(jitteredRotation, {
+            duration: 250,
+            easing: Easing.out(Easing.quad)
+        }));
+        translateX.value = withDelay(stagger + 80, withTiming(jitteredX, {
+            duration: 250,
+            easing: Easing.out(Easing.quad)
+        }));
+        translateY.value = withDelay(stagger + 80, withTiming(jitteredY, {
+            duration: 250,
+            easing: Easing.out(Easing.quad)
+        }));
     }, []);
 
     // ✅ Closing animation with jitter wobble
@@ -47,8 +56,8 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
 
             // Add a little jitter wobble before settling
             rotation.value = withSequence(
-                withTiming(jitteredRotation + 5, { duration: 100 }),
-                withTiming(jitteredRotation - 3, { duration: 100 }),
+                withTiming(jitteredRotation + 5, {duration: 100}),
+                withTiming(jitteredRotation - 3, {duration: 100}),
                 withTiming(0, config) // Final settle
             );
 
@@ -66,10 +75,10 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
         zIndex: 10 + index,
         elevation: 10 + index,
         transform: [
-            {rotateZ: `${rotation.value}deg`},
+            {rotateZ: `${rotation.value+10}deg`},
             {scale: scaleVal.value},
         ],
-        ...styles.cardSlotDraw
+        // ...styles.cardSlotDraw
     }));
 
     return (
@@ -78,7 +87,7 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
                 cardId={card}
                 isFacedown={false}
                 cardWidth={cardWidth}
-                style={styles.tableCardArtwork}
+                style={"fanned"}
             />
         </Animated.View>
     );

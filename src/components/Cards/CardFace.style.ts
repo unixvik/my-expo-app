@@ -34,7 +34,7 @@ export const createStyles = (
     },
     // 🌟 This is the highlight logic
     selected: {
-        borderColor: theme.cards.selectedBorder,
+        borderColor: theme.cards.cardBorders.selectedBorder,
         borderWidth: scale(3),
         // Lift effect scales with device height
         transform: [{ translateY: -scale(15) }],

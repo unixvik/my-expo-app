@@ -1,10 +1,4 @@
-export interface CardBackPattern {
-    margins: string;
-    borderRadius: number;
-    borderWidth: number;
-    borderColor: string;
-    backgroundColor: string;
-}
+import {THEMES} from "@/theme/theme";
 
 export interface CardBackEmblem {
     symbol: string;
@@ -14,41 +8,36 @@ export interface CardBackEmblem {
     fontWeight: string;
 }
 
-export interface CardBackStripe {
-    backgroundColor: string;
-    opacity: number;
-    height: number;
-    transform: any[];
-}
 
 export interface CardBackTheme {
     backgroundColor: string;
     image?: any; // require('@/assets/images/card-back.png') — overrides pattern/stripe/emblem when set
-    pattern: CardBackPattern;
-    stripe: CardBackStripe;
     emblem: CardBackEmblem;
 }
 
 export interface CardFrontTheme {
     backgroundColor: string;
-    borderColor: string;
+    suitRed: string;
+    suitBlack: string;
+    image?: any; // require('@/assets/images/card-back.png') — overrides pattern/stripe/emblem when set
+}
+
+export interface CardBorderTheme {
+    selectedBorder: string;
+    defaultBorder: string;
+    borderSize: number;
+    borderRadius: number;
 }
 
 export interface CardsTheme {
     cardBack: CardBackTheme;
     cardFront: CardFrontTheme;
-    suitRed: string;
-    suitBlack: string;
-    selectedBorder: string;
+    cardBorders: CardBorderTheme;
+
 }
 
 export interface TableTheme {
-    vignette?: string;
-    rail?: string;
-    rim?: string;
-    rimGradient?: [string, string, string, string?, string?];
-    surfaceGradient?: [string, string, string?];
-    gridOpacity?: number;
+
 }
 
 export interface PlayerZone {
@@ -56,12 +45,12 @@ export interface PlayerZone {
 }
 
 export interface GameTheme {
-    id: "midnight";
+    id: "midnight" | "casino";
     background: string;
     surface: string;
     accent: string;
     cards: CardsTheme;
-    borderCard: string;
+
     text: {
         primary: string;
         secondary: string;
@@ -80,23 +69,10 @@ export interface ThemeTokens {
         primary: string
         secondary: string
     }
-    suitRed: string
-    suitBlack: string
-    shadow: string
 
-    // visual identity tokens
-    cardSymbol: string
-    cardBackColor: string
-    cardBackImage?: any // optional: require('@/assets/images/card-back.png')
-    cardBorder: string,
-    table: {
-        vignette?: string
-        rail?: string
-        rim?: string
-        surfaceGradient?: [string, string, string?]
-        rimGradient?: [string, string, string, string?, string?]
-        gridOpacity?: number
-    }
+    cards: CardsTheme;
+
+    table: {}
     playerZone: {
         backgroundArea: string;
     }
@@ -117,8 +93,30 @@ export const midnightTokens: ThemeTokens = {
     shadow: "rgba(0,0,0,0.5)",
 
     // visual identity
-    cardSymbol: "◆",
-    cardBackColor: "#2b62b6",
+    cards: {
+        cardBack: {
+            emblem: {
+                symbol: "◆",
+                fontSize: 0,
+                color: "",
+                opacity: 0,
+                fontWeight: ""
+            },
+            backgroundColor: "",
+        },
+        cardFront: {
+            backgroundColor: "",
+            suitRed: "",
+            suitBlack: ""
+        },
+        cardBorders: {
+            selectedBorder: "",
+            defaultBorder: "",
+            borderSize: 0,
+            borderRadius: 0
+        }
+    },
+
     cardBackImage: require('@/assets/images/cards.png'),
     cardBorder: "#eac408",
     table: {
@@ -144,8 +142,8 @@ export const midnightTokens: ThemeTokens = {
         backgroundArea: "rgba(19,56,115,0.59)",
     }
 }
+
 export const casinoTokens: ThemeTokens = {
-    cardBorder: "",
     playerZone: {backgroundArea: ""},
     table: {},
     background: "#0f172a",
@@ -156,11 +154,32 @@ export const casinoTokens: ThemeTokens = {
         primary: "#ffffff",
         secondary: "#94a3b8",
     },
-    suitRed: "#e53935",
-    suitBlack: "#000",
 
-    shadow: "rgba(0,0,0,0.6)",
 
-    cardSymbol: "♠",
-    cardBackColor: "#0b3d0b"
+    cards: {
+        cardBack: {
+            backgroundColor: "",
+            emblem: {
+                symbol: "♠",
+                fontSize: 10,
+                color: "#FF0000",
+                opacity: 1,
+                fontWeight: "normal"
+            },
+            image: require('@/assets/themes/casino/cardBack.png'),
+        },
+        cardFront: {
+            backgroundColor: "#FFF",
+            suitRed: "#83120e",
+            suitBlack: "#272525",
+            image: require('@/assets/themes/casino/cardFront.jpg'),
+        },
+        cardBorders: {
+            selectedBorder: "#ffdf00",
+            defaultBorder: "rgb(50,45,45)",
+            borderSize: 1,
+            borderRadius: 4,
+        }
+    },
+
 }

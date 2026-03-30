@@ -16,6 +16,8 @@ export const TABLE_TILT = 40;         // Degrees for 3D Perspective
 export const TABLE_PERSPECTIVE = 800;
 export const FLIGHT_DURATION = 630;   // ms — must match FlightOverlay
 
+export const themeFolder="@/assets/themes"
+
 // DISCARD OFFSET
 export const DISCARD_OFFSET = {
     x: 15,
@@ -26,7 +28,7 @@ export const DISCARD_OFFSET = {
 // Shared fan position formula — used by both FannedCardItem and FlightOverlay
 // Returns offsets relative to the discard slot origin
 export const getFanPosition = (index: number) => ({
-    x: DISCARD_OFFSET.x + index * 10,
+    x: DISCARD_OFFSET.x + index * 10+20,
     y: DISCARD_OFFSET.y + index * 14,
     rotation: (index * 10) + 12,
 });

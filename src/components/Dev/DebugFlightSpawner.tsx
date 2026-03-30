@@ -23,7 +23,6 @@ const DebugFlightSpawner = () => {
     const spawnFlyingCard = useVisualStore(s => s.spawnFlyingCard);
     const selectedDiscardIds = useGameStore((s) => s.local.selectedDiscardIds || []);
 
-    const {width, height} = useWindowDimensions();
     const {moderateScale} = useResponsive();
 
     const [auto, setAuto] = useState(false);
@@ -229,8 +228,8 @@ const DebugFlightSpawner = () => {
                         pointerEvents="none"
                         style={{
                             position: 'absolute',
-                            left: discardLayout.x + discardLayout.width / 2 - 10,
-                            top: discardLayout.y + discardLayout.height / 2 - 10,
+                            left: discardLayout.x + discardLayout.width / 2,
+                            top: discardLayout.y + discardLayout.height / 2,
                             width: 20,
                             height: 20,
                             zIndex: 11,

@@ -183,25 +183,6 @@ export const createStyles = (
             ...rnShadow("medium"),
         },
 
-        tableCardArtwork: {
-            // width: '100%',
-            // height: '100%',
-            borderRadius: scale(8),
-            backgroundColor: theme.cards.cardFront.backgroundColor, // Gives the facedown deck a solid base
-            overflow: 'hidden',
-            // zIndex:100,
-            ...rnShadow("heavy"),
-        },
-        // slotLabel: {
-        //     fontSize: moderateScale(8),
-        //     fontWeight: "800",
-        //     opacity: 0.8,
-        //
-        //     // position: "absolute",
-        //     // overflow: "visible",
-        //     top: -scale(15),
-        //     color: theme.text.primary,
-        // },
 
         deckWrapper: {
             alignItems: "center",
@@ -220,14 +201,15 @@ export const createStyles = (
 
         discardSlot: {
             borderColor: theme.accent,
-            borderWidth: scale(2),
+            borderWidth: scale(1),
             zIndex: Z_INDEX.PILES,
             alignItems: "center",
             justifyContent: "center",
             alignSelf: "center",
             width: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE) + scale(20),
             height: scale(BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE) * CARD_ASPECT_RATIO + scale(20),
-            borderRadius: 10,
+            borderRadius: theme.cards.cardBorders.borderRadius,
+            borderStyle: "dashed",
             position: 'relative', // Ensure children absolute to this
         },
         cardContainer: {

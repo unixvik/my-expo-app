@@ -111,7 +111,7 @@ export function useRoomConnection() {
             const nextRoom = await client.joinOrCreate<ClaimRoomState>(ROOM_NAME, {
                 name: name,
                 // playerKey: playerKey,
-                customName: "ROOM_1234"
+                customName: "ROOM_123"
             });
 
             if (attemptRef.current !== myAttempt || roomRef.current) {

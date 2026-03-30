@@ -39,28 +39,6 @@ export const createStyles = (
             opacity: 0.2,
         },
 
-        patternPanel: {
-            position: "absolute",
-            top: theme.cards.cardBack.pattern.margins,
-            left: theme.cards.cardBack.pattern.margins,
-            right: theme.cards.cardBack.pattern.margins,
-            bottom: theme.cards.cardBack.pattern.margins,
-            borderRadius: scale(theme.cards.cardBack.pattern.borderRadius),
-            borderWidth: scale(theme.cards.cardBack.pattern.borderWidth),
-            borderColor: theme.cards.cardBack.pattern.borderColor,
-            backgroundColor: theme.cards.cardBack.pattern.backgroundColor,
-            overflow: "hidden",
-        },
-
-        stripe: {
-            position: "absolute",
-            width: "200%",
-            height: scale(theme.cards.cardBack.stripe.height),
-            backgroundColor: theme.cards.cardBack.stripe.backgroundColor,
-            opacity: theme.cards.cardBack.stripe.opacity,
-            transform: theme.cards.cardBack.stripe.transform,
-        },
-
         emblemWrap: {
             ...StyleSheet.absoluteFillObject,
             justifyContent: "center",

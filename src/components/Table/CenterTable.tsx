@@ -7,23 +7,22 @@ import {DISCARD_OFFSET, BASE_CARD_WIDTH, CENTER_TABLE_CARD_SCALE} from "@/state/
 import {convertServerCardToUICard, parseStringCardsToUI} from "@/utils/suitHelper";
 import {useAwaitingDraw} from "@/state/gameSelectors";
 import {AppText} from "@/Common/AppText";
-import Animated, {useAnimatedRef, useSharedValue, useAnimatedStyle, withSpring, withDelay, withTiming} from "react-native-reanimated";
+import Animated, {
+    useAnimatedRef,
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withDelay,
+    withTiming
+} from "react-native-reanimated";
 import {useVisualStore} from "@/state/useVisualStore";
 import {FannedCardItem} from "@/components/Cards/FannedCardItem";
 import {useAppStyles} from "@/hooks/useAppStyles";
 import {useGameActions} from "@/hooks/useGameActions";
 import {updateLayout} from "@/utils/helpers";
 
-// Static offsets that give the illusion of a messy thrown pile
-const PILE_LAYERS = [
-    {x: -8, y: 3, r: -9},
-    {x: 9, y: -2, r: 13},
-    {x: -11, y: 4, r: -6},
-];
-
 export function CenterTable() {
     const {styles, theme} = useAppStyles();
-    const {scale} = useResponsive();
     const centerCardWidth = BASE_CARD_WIDTH * CENTER_TABLE_CARD_SCALE;
 
     // Store Selectors
@@ -48,37 +47,38 @@ export function CenterTable() {
     const drawRef = useAnimatedRef<View>();
 
     // Entrance animation — springs up from below with bouncy wobble
-    const gameStatus    = useGameStore((s) => s.server.gameStatus);
-    const tableSettled  = useVisualStore((s) => s.tableSettled);
-
+    const gameStatus = useGameStore((s) => s.server.gameStatus);
+    const tableSettled = useVisualStore((s) => s.tableSettled);
+    const setTableSettled = useVisualStore((s) => s.setTableSettled);
     // Re-measure refs once the table animation has settled so flying cards
     // target the correct visual position (not the off-screen starting position).
     useEffect(() => {
-        if (tableSettled) {
+        if (gameStatus === 'playing') {
+            console.log("Updating layouts");
             updateLayout('deck', drawRef, null);
             updateLayout('discard', discardRef, 1);
         }
-    }, [tableSettled]);
+    }, [gameStatus]);
     const hasEntered = useRef(false);
-    const entranceY       = useSharedValue(220);
-    const entranceScale   = useSharedValue(0.6);
+    const entranceY = useSharedValue(220);
+    const entranceScale = useSharedValue(0.6);
     const entranceOpacity = useSharedValue(0);
 
     useEffect(() => {
         if (gameStatus === 'starting' && !hasEntered.current) {
             hasEntered.current = true;
-            const SPRING = { mass: 1.1, stiffness: 220, damping: 7 };
-            entranceOpacity.value = withDelay(180, withTiming(1, { duration: 180 }));
-            entranceY.value       = withDelay(180, withSpring(0, SPRING));
-            entranceScale.value   = withDelay(180, withSpring(1, SPRING));
+            const SPRING = {mass: 1.1, stiffness: 220, damping: 7};
+            entranceOpacity.value = withDelay(180, withTiming(1, {duration: 180}));
+            entranceY.value = withDelay(180, withSpring(0, SPRING));
+            entranceScale.value = withDelay(180, withSpring(1, SPRING));
         }
     }, [gameStatus]);
 
     const entranceStyle = useAnimatedStyle(() => ({
         opacity: entranceOpacity.value,
         transform: [
-            { translateY: entranceY.value },
-            { scale: entranceScale.value },
+            {translateY: entranceY.value},
+            {scale: entranceScale.value},
         ],
     }));
 
@@ -92,7 +92,7 @@ export function CenterTable() {
             r: (Math.random() - 0.5) * 20,
         });
     }
-    const pileLayersWithJitter = jitterCache.current.slice(0, needed).map((j, i) => ({ ...j, index: i }));
+    const pileLayersWithJitter = jitterCache.current.slice(0, needed).map((j, i) => ({...j, index: i}));
 
     return (
         <Animated.View style={[styles.centerTable, entranceStyle]}>
@@ -123,6 +123,8 @@ export function CenterTable() {
                 style={[styles.discardSlot]}
                 disabled={!mandatoryDraw}
                 onPress={() => drawCards(true)}
+                ref={discardRef}
+                onLayout={() => updateLayout('discard', discardRef, 1)}
             >
                 <AppText style={styles.slotLabel}>DISCARD</AppText>
 
@@ -140,9 +142,9 @@ export function CenterTable() {
                                 key={`pile-${layer.index}`}
                                 style={[styles.absoluteCenter, {
                                     transform: [
-                                        { translateX: layer.x },
-                                        { translateY: layer.y },
-                                        { rotateZ: `${layer.r}deg` }
+                                        {translateX: layer.x},
+                                        {translateY: layer.y},
+                                        {rotateZ: `${layer.r}deg`}
                                     ],
                                     zIndex: layer.index,
                                 }]}
@@ -153,7 +155,7 @@ export function CenterTable() {
                     })}
 
                     {/* Top card */}
-                    <View style={[styles.absoluteCenter, { zIndex: 10 }]}>
+                    <View style={[styles.absoluteCenter, {zIndex: 10}]}>
                         {mainSlotRaw ? (
                             <CardFace cardId={mainSlotRaw.id} cardWidth={centerCardWidth}/>
                         ) : (
@@ -166,8 +168,7 @@ export function CenterTable() {
                 {/* Added pointerEvents="none" if you only want the main slot to be touchable */}
                 <View
                     style={[StyleSheet.absoluteFill, styles.centerContent]}
-                    ref={discardRef}
-                    onLayout={() => updateLayout('discard', discardRef, 1)}
+
                     pointerEvents="box-none"
                 >
                     {offsetSlotCards.length > 0 && offsetSlotCards.map((card, index) => {
@@ -187,6 +188,7 @@ export function CenterTable() {
                                 isFlying={isFlying}
                                 styles={styles}
                                 cardWidth={centerCardWidth}
+                                style="fanned"
                             />
                         );
                     })}

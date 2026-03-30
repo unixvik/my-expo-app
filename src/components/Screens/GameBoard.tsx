@@ -1,7 +1,6 @@
 import React, {useMemo, useRef} from 'react';
 import {useTheme} from '@/hooks/useTheme';
 import {createStyles} from './GameBoard.styles';
-import {TableSurface} from "@/components/Table/TableSurface";
 import {useResponsive} from "@/hooks/useResponsive";
 import {CenterTable} from "@/components/Table/CenterTable";
 import {OpponentsLayer} from "@/components/UI/Opponents/OpponentsLayer";
@@ -10,10 +9,8 @@ import {ImageBackground, StyleSheet, View} from "react-native";
 import {DebugTrajectory} from "@/components/Dev/DebugTrajectory";
 import {FlightOverlay} from "@/components/Dev/FlightOverlay";
 import DebugFlightSpawner from "@/components/Dev/DebugFlightSpawner";
-import {getSceneTransform} from "@/utils/helpers";
-import {GameStatusOverlay} from "@/components/Dev/GameStatusOverlay";
-import {Background} from "@/components/Overlays/Background";
-import Video from "react-native-video";
+import {useVisualStore} from "@/state/useVisualStore";
+
 
 export const GameBoard = () => {
     const theme = useTheme();
@@ -40,17 +37,17 @@ export const GameBoard = () => {
 
             <PlayerLayer/>
 
-            <ImageBackground
-                source={require('@/assets/images/background.png')}
+            {/*<ImageBackground*/}
+            {/*    source={require('@/assets/images/background.png')}*/}
 
-                style={[StyleSheet.absoluteFillObject, {zIndex:3,  transform: [ { rotateX: "0deg"}]}]}
-            />
-            <ImageBackground
-                source={require('@/assets/images/smoke.png')}
+            {/*    style={[StyleSheet.absoluteFillObject, {zIndex:3,  transform: [ { rotateX: "0deg"}]}]}*/}
+            {/*/>*/}
+            {/*<ImageBackground*/}
+            {/*    source={require('@/assets/images/smoke.png')}*/}
 
-                style={[StyleSheet.absoluteFillObject, {zIndex:7, opacity:0.6,  transform: [ { rotateX: "0deg"}]}]}
-                imageStyle={{tintColor: "rgba(213,0,75,0.72)",opacity: 0.3 }}
-            />
+            {/*    style={[StyleSheet.absoluteFillObject, {zIndex:7, opacity:0.6,  transform: [ { rotateX: "0deg"}]}]}*/}
+            {/*    imageStyle={{tintColor: "rgba(213,0,75,0.72)",opacity: 0.3 }}*/}
+            {/*/>*/}
 
 
 
@@ -65,9 +62,9 @@ export const GameBoard = () => {
                         {/*TABLE Surface*/}
 
 
-                        <TableSurface/>
+                        {/*<TableSurface/>*/}
                         {/*CENTER TABLE*/}
-
+                        <CenterTable />
 
                     </View>
                 </View>

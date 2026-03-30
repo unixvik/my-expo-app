@@ -97,7 +97,7 @@ export const AnimatedHandCard = ({
             elevation: withSpring(isSelected ? 24 : 8, {damping: 15, stiffness: 200}),
             shadowOpacity: 0.3 + (glowIntensity * 0.3), // 0.3 → 0.6
             shadowRadius: 6 + (glowIntensity * 10),      // 6 → 16
-            shadowColor: isSelected ? theme.cards.selectedBorder : '#000',
+            shadowColor: isSelected ? theme.cards.cardBorders.selectedBorder : '#000',
 
             // Subtle glow effect
             backgroundColor: `rgba(255, 255, 255, ${glowIntensity * 0.08})`,
