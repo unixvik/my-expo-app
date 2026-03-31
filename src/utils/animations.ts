@@ -9,7 +9,7 @@ import {useVisualStore} from "@/state/useVisualStore";
 
 
 const IS_WEB = Platform.OS === 'web';
-const OVERLAP_RATIO = IS_WEB ? 0 : -0.2;
+const OVERLAP_RATIO = IS_WEB ? -0.2 : -0.2;
 const handPositions = useVisualStore(s=>s.layouts.opponents);
 
 export const calculateCardFan = (

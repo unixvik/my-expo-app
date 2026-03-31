@@ -30,7 +30,7 @@ import { CardFace } from "@/components/Cards/CardFace";
 export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, sizeScaleRatio = 1, targetX, targetY, targetRotation, delay, zIndex = 0, onDone }: any) => {
     const flightProgress = useSharedValue(0);
     const impactProgress = useSharedValue(0);
-    const baseShadow = rnShadow("heavy");
+    const baseShadow = rnShadow("contact");
 
     const safeStartX = ghost?.startX || 0;
     const safeStartY = ghost?.startY || 0;
@@ -44,7 +44,7 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, sizeScaleRatio = 
             }, (finished) => {
                 'worklet';
                 if (finished) {
-                    impactProgress.value = withTiming(1, { duration: 300 }, (ok) => {
+                    impactProgress.value = withTiming(1, { duration: 1300 }, (ok) => {
                         if (ok && onDone) {
                             runOnJS(onDone)();
                         }
@@ -60,23 +60,27 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, sizeScaleRatio = 
         const arcMultiplier = Math.sin(p * Math.PI);
 
         const wobble = Math.sin(p * 12) * interpolate(p, [0, 0.5, 1], [0, 10, 0]);
-        const arc = -arcMultiplier * 150;
+        const arc = arcMultiplier * 150;
 
         const squash = Math.sin(imp * Math.PI) * interpolate(imp, [0, 1], [0.12, 0]);
-        const sizeScale = interpolate(p, [0, 1], [1, sizeScaleRatio]);
+        const sizeScale = interpolate(p, [0, 1], [1.1, sizeScaleRatio]);
         const scaleX = (1 + squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]) * sizeScale;
         const scaleY = (1 - squash) * interpolate(arcMultiplier, [0, 0.5, 1], [1, 1.1, 1]) * sizeScale;
 
+        const brightness = interpolate(p, [0, 0.9, 1], [100 , 60, 50]);
+        // console.log(brightness);
         return {
             transform: [
                 { translateX: interpolate(p, [0, 1], [safeStartX, targetX]) },
                 { translateY: interpolate(p, [0, 1], [safeStartY, targetY]) + arc },
                 { scaleX },
                 { scaleY },
+
                 { rotateZ: `${interpolate(p, [0, 1], [0, targetRotation]) + wobble}deg` },
             ],
             // ✅ Fade out at end for crossfade
-            // opacity: interpolate(p, [0, 0.85, 1], [1, 1, 0]),
+            // opacity: interpolate(p, [0, 0.85, 1], [0.1, 0.8, 1]),
+            filter: `brightness(${brightness}%)`,
         };
     });
 
@@ -93,7 +97,9 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, sizeScaleRatio = 
                     elevation: zIndex,
                 },
                 animatedCardStyle,
-                // ✅ Use React Native shadow (stays with card in 3D space)
+                // ✅ U
+                //
+                // se React Native shadow (stays with card in 3D space)
                 baseShadow,
             ]}
             pointerEvents="none"
@@ -101,7 +107,7 @@ export const FlyingCardItem = ({ ghost, cardWidth, cardHeight, sizeScaleRatio = 
             <CardFace
                 cardId={ghost.card}
                 isFacedown={ghost.isFacedown}
-                style={{ width: '100%', height: '100%' }}
+                // style={{ width: '100%', height: '100%' }}
             />
         </Animated.View>
     );
@@ -145,36 +151,28 @@ export const FlightOverlay = () => {
     const handleCardDone = (id: string) => {
         completedRef.current.add(id);
         if (completedRef.current.size === totalCardsRef.current) {
-            // setTimeout(() => {
+            setTimeout(() => {
                 // To avoid closure issues, rely on the store action, or use the zustand state directly here
                 const currentFlyingCards = useVisualStore.getState().flyingCards;
                 currentFlyingCards.forEach(card => removeFlyingCard(card.id));
-            // }, 40);
+            }, 10);
         }
     };
 
-    const containerStyle = useAnimatedStyle(() => ({
-        // transform: [
-        //     { perspective: containerPerspective.value },
-        //     { rotateX: `${containerTilt.value}deg` },
-        // ]
-    }));
 
     if (!discardLayout || flyingCards.length === 0) return null;
 
     return (
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { zIndex: Z_INDEX.MODALS }]}>
-            <Animated.View style={[StyleSheet.absoluteFillObject, containerStyle]}>
+            <Animated.View style={[StyleSheet.absoluteFillObject]}>
                 {flyingCards.map((ghost, index) => {
                     const isDraw = ghost.type === 'draw';
                     const fanIndex = ghost.fanIndex ?? 0;
                     const fanPos = getFanPosition(index);
                     const landingX = isDraw ? (ghost.endX || 0) : discardLayout?.x + fanPos.x;
-                    // const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y - discardLayout?.y/2 +DISCARD_OFFSET.x|| 0) + fanPos.y;
-                    const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y-DISCARD_OFFSET.y);
-                    const landingRotation = isDraw ? 0 : scale(fanPos.rotation);
-                    const delay = fanIndex * 20; // ✅ Use fanIndex for stagger
-
+                    const landingY = isDraw ? (ghost.endY || 0) : (discardLayout?.y +DISCARD_OFFSET.y);
+                    const landingRotation = isDraw ? 0 : fanPos.rotation;
+                    const delay = fanIndex * 30; // ✅ Use fanIndex for stagger
 
                     const startWidth = isDraw ? centerCardWidth : playerCardWidth;
                     const startHeight = isDraw ? centerCardHeight : playerCardHeight;

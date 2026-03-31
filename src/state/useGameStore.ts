@@ -181,6 +181,14 @@ export const useGameStore = create<GameStore>()(
 
 
             }),
+            simulateDiscardCards: (cards) => set((state) => {
+                // Take snapshot
+                const pile = state.server.discardPile;
+                state.local.heldTopDiscard = pile.length > 0 ? pile[pile.length - 1] : null;
+                state.local.discardedCards = cards;
+
+
+            }),
 
 
             // Inside your gameStore definition

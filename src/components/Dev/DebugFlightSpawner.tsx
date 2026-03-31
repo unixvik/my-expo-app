@@ -23,6 +23,9 @@ const DebugFlightSpawner = () => {
     const spawnFlyingCard = useVisualStore(s => s.spawnFlyingCard);
     const selectedDiscardIds = useGameStore((s) => s.local.selectedDiscardIds || []);
 
+
+    const simulateDiscardCards = useGameStore((s) => s.simulateDiscardCards);
+
     const {moderateScale} = useResponsive();
 
     const [auto, setAuto] = useState(false);
@@ -65,10 +68,10 @@ const DebugFlightSpawner = () => {
 
         // 🎯 Discard center (TRUE center)
         const discardCenterX =
-            discardLayout.x + discardLayout.width / 2 + moderateScale(DISCARD_OFFSET.x);
+            discardLayout.x + discardLayout.width / 2; //+ moderateScale(DISCARD_OFFSET.x);
 
         const discardCenterY =
-            discardLayout.y + discardLayout.height / 2 + moderateScale(DISCARD_OFFSET.y);
+            discardLayout.y + discardLayout.height / 2; //+ moderateScale(DISCARD_OFFSET.y);
 
         // 🎯 Take FIRST available player card
         const firstCard = Object.values(playerLayout)[0];
@@ -93,6 +96,7 @@ const DebugFlightSpawner = () => {
         // spawnFlyingCard(flightData);
 // console.log("Spaewn!");
         //test
+
         spawnDiscardFlight({
             selectedDiscardIds,
             hand:[],
@@ -101,7 +105,7 @@ const DebugFlightSpawner = () => {
             spawnFlyingCard
         });
 
-
+        simulateDiscardCards(selectedDiscardIds);
     };
 
     // 🔁 Auto spawn

@@ -28,12 +28,12 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
     const translateX = useSharedValue(fanX);
     const translateY = useSharedValue(fanY);
     const scaleVal = useSharedValue(0.85);
-    const opacity = useSharedValue(0);
+    const brightness = useSharedValue(100);
 
     // On mount: fade in, scale up, then drift into jittered resting position
     React.useEffect(() => {
         const stagger = index * 40;
-        opacity.value = withDelay(stagger, withTiming(1, {duration: 150}));
+        brightness.value = withDelay(stagger, withTiming(50, {duration: 0}));
         scaleVal.value = withDelay(stagger, withSpring(1, {damping: 10, stiffness: 300}));
         rotation.value = withDelay(stagger + 80, withTiming(jitteredRotation, {
             duration: 250,
@@ -71,12 +71,12 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
         position: 'absolute',
         left: translateX.value,
         top: translateY.value,
-        opacity: opacity.value,
+        filter: `brightness(${brightness.value}%)`,
         zIndex: 10 + index,
         elevation: 10 + index,
         transform: [
             {rotateZ: `${rotation.value+10}deg`},
-            {scale: scaleVal.value},
+            // {scale: scaleVal.value},
         ],
         // ...styles.cardSlotDraw
     }));
@@ -87,7 +87,7 @@ export const FannedCardItem = ({card, index, isClosing, styles, cardWidth}: any)
                 cardId={card}
                 isFacedown={false}
                 cardWidth={cardWidth}
-                style={"fanned"}
+                // style={"fanned"}
             />
         </Animated.View>
     );
